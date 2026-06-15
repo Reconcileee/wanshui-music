@@ -1,0 +1,426 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Inter + Noto Sans SC 统一字体栈 */
+  font-family:
+    'Inter',
+    'Noto Sans SC',
+    -apple-system,
+    BlinkMacSystemFont,
+    'SF Pro Display',
+    'SF Pro Text',
+    'PingFang SC',
+    'Hiragino Sans GB',
+    'Microsoft YaHei',
+    'Segoe UI',
+    system-ui,
+    sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* 液态玻璃 CSS 变量 */
+  --lg-shadow-blur: 20px;
+  --lg-shadow-spread: -5px;
+  --lg-shadow-color: rgba(255, 255, 255, 0.45);
+  --lg-tint-color: 255, 255, 255;
+  --lg-tint-opacity: 0.06;
+  --lg-outer-shadow-blur: 24px;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 隐藏滚动条 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ============================================================
+   真正的液态玻璃表面 —— 三层结构（移植自 liquid-glass）
+   ============================================================ */
+
+.liquid-glass-surface {
+  position: relative;
+  isolation: isolate;
+  touch-action: none;
+  /* 外阴影 —— 悬浮感 */
+  box-shadow: 0 4px var(--lg-outer-shadow-blur) rgba(0, 0, 0, 0.18);
+}
+
+/* 第1层（最上层）: 内阴影 + 玻璃着色 tint */
+.liquid-glass-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  /* 内阴影模拟玻璃厚度 */
+  box-shadow: inset 0 0 var(--lg-shadow-blur) var(--lg-shadow-spread) var(--lg-shadow-color);
+  /* 微弱白色着色 */
+  background-color: rgba(var(--lg-tint-color), var(--lg-tint-opacity));
+  pointer-events: none;
+}
+
+/* 第2层（最底层）: SVG 滤镜折射层 */
+.liquid-glass-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  /* 真正的液态玻璃滤镜：位移+高光+折射 */
+  backdrop-filter: var(--lg-filter, blur(20px) saturate(1.4));
+  -webkit-backdrop-filter: var(--lg-filter, blur(20px) saturate(1.4));
+  isolation: isolate;
+}
+
+/* 深色模式/暗背景下的液态玻璃变体 */
+.liquid-glass-surface-dark {
+  --lg-shadow-color: rgba(255, 255, 255, 0.35);
+  --lg-tint-opacity: 0.08;
+  --lg-outer-shadow-blur: 32px;
+  box-shadow: 0 8px var(--lg-outer-shadow-blur) rgba(0, 0, 0, 0.25);
+}
+
+/* ============================================================
+   动画
+   ============================================================ */
+
+/* 播放按钮脉冲动画 */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* 封面旋转动画 */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+.animate-spin-paused {
+  animation-play-state: paused;
+}
+
+/* 从底部滑入 */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* 淡入 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+/* 音频均衡器动画 */
+@keyframes equalizer {
+  0% {
+    transform: scaleY(0.3);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+/* 卡片入场交错动画 */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-card-enter {
+  animation: card-enter 0.5s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* 页面入场动画 */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  animation: page-enter 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* 卡片交错动画延迟 */
+.animate-stagger-1 { animation-delay: 0.05s; }
+.animate-stagger-2 { animation-delay: 0.1s; }
+.animate-stagger-3 { animation-delay: 0.15s; }
+.animate-stagger-4 { animation-delay: 0.2s; }
+.animate-stagger-5 { animation-delay: 0.25s; }
+.animate-stagger-6 { animation-delay: 0.3s; }
+
+/* 悬停时的微妙发光效果 */
+@keyframes hover-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(250, 45, 72, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(250, 45, 72, 0.15);
+  }
+}
+
+.animate-hover-glow:hover {
+  animation: hover-glow 1.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   液态玻璃参数控制面板
+   ============================================================ */
+
+/* 切换按钮 */
+.lg-ctrl-toggle {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 200;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(22, 22, 26, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.25s, transform 0.25s;
+}
+.lg-ctrl-toggle:hover {
+  background: rgba(22, 22, 26, 0.85);
+  color: #fff;
+}
+.lg-ctrl-toggle-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.9);
+}
+
+/* 遮罩层 */
+.lg-ctrl-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 199;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 面板 */
+.lg-ctrl-panel {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  bottom: 12px;
+  width: 272px;
+  background: rgba(22, 22, 26, 0.78);
+  backdrop-filter: blur(40px) saturate(1.4);
+  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  color: #fff;
+  border-radius: 20px;
+  font-size: 13px;
+  z-index: 201;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateX(calc(-100% - 24px));
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.lg-ctrl-panel-open {
+  transform: translateX(0);
+}
+
+/* 面板头部 */
+.lg-ctrl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 0;
+  flex-shrink: 0;
+}
+.lg-ctrl-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+.lg-ctrl-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lg-ctrl-reset {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.lg-ctrl-reset:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+.lg-ctrl-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.lg-ctrl-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+/* 滚动区域 */
+.lg-ctrl-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+.lg-ctrl-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.lg-ctrl-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.lg-ctrl-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+/* 分组标题 */
+.lg-ctrl-group-title {
+  margin: 16px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.3);
+}
+.lg-ctrl-scroll > div:first-child .lg-ctrl-group-title {
+  margin-top: 0;
+}
+
+/* 滑块行 */
+.lg-ctrl-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 5px 0;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.55);
+  gap: 8px;
+}
+.lg-ctrl-label {
+  flex-shrink: 0;
+  min-width: 64px;
+}
+.lg-ctrl-slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: #8b7cf7;
+}
+.lg-ctrl-value {
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  min-width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .lg-ctrl-panel {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 55vh;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(100%);
+  }
+  .lg-ctrl-panel-open {
+    transform: translateY(0);
+  }
+  .lg-ctrl-toggle {
+    top: auto;
+    left: auto;
+    bottom: 80px;
+    right: 14px;
+  }
+}

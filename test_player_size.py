@@ -7,7 +7,7 @@ with sync_playwright() as p:
     for width in [1280, 768, 480, 375]:
         page = browser.new_page()
         page.set_viewport_size({'width': width, 'height': 800})
-        page.goto('http://localhost:5173')
+        page.goto('http://localhost:5174/wanshui-music/')
         page.wait_for_load_state('networkidle')
         page.wait_for_timeout(1000)
         

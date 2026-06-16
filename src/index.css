@@ -3,10 +3,8 @@
 @tailwind utilities;
 
 :root {
-  /* Inter + Noto Sans SC 统一字体栈 */
+  /* Apple Music 风格字体栈 */
   font-family:
-    'Inter',
-    'Noto Sans SC',
     -apple-system,
     BlinkMacSystemFont,
     'SF Pro Display',
@@ -14,6 +12,8 @@
     'PingFang SC',
     'Hiragino Sans GB',
     'Microsoft YaHei',
+    'Inter',
+    'Noto Sans SC',
     'Segoe UI',
     system-ui,
     sans-serif;
@@ -21,6 +21,18 @@
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+
+  /* Apple Music 品牌色 */
+  --am-red: #fa2d48;
+  --am-red-hover: #e0263f;
+  --am-bg: #1a1a1a;
+  --am-surface: rgba(35, 35, 36, 0.85);
+  --am-surface-light: rgba(255, 255, 255, 0.06);
+  --am-text-primary: rgba(255, 255, 255, 1);
+  --am-text-secondary: rgba(255, 255, 255, 0.6);
+  --am-text-tertiary: rgba(255, 255, 255, 0.35);
+  --am-border: rgba(255, 255, 255, 0.08);
 
   /* 液态玻璃 CSS 变量 */
   --lg-shadow-blur: 20px;

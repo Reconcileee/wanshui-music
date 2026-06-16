@@ -8,12 +8,25 @@ import LoginModal from '@/components/LoginModal';
 
 function AppInner() {
   const initAudio = useMusicStore((s) => s.initAudio);
+  const loadUserPlaylists = useMusicStore((s) => s.loadUserPlaylists);
+  const clearUserPlaylists = useMusicStore((s) => s.clearUserPlaylists);
   const [showLyrics, setShowLyrics] = useState(false);
   const showLoginModal = useAuthStore((s) => s.showLoginModal);
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const username = useAuthStore((s) => s.username);
 
   useEffect(() => {
     initAudio();
   }, [initAudio]);
+
+  // 用户登录状态变化时加载/清除歌单
+  useEffect(() => {
+    if (isLoggedIn && username) {
+      loadUserPlaylists(username);
+    } else {
+      clearUserPlaylists();
+    }
+  }, [isLoggedIn, username, loadUserPlaylists, clearUserPlaylists]);
 
   return (
     <>

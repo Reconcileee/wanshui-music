@@ -1,6 +1,6 @@
 import { Song } from '@/types';
 import { useMusicStore } from '@/store/useMusicStore';
-import { Play } from 'lucide-react';
+import { Play, MoreHorizontal } from 'lucide-react';
 
 interface AlbumCardProps {
   song: Song;
@@ -28,42 +28,41 @@ export default function AlbumCard({ song, index }: AlbumCardProps) {
         <img
           src={song.cover}
           alt={song.album}
-          className={`h-full w-full object-cover transition-all duration-500 ${
-            isCurrentSong && isPlaying ? 'scale-105' : 'group-hover:scale-105'
+          className={`h-full w-full object-cover transition-[transform,filter] duration-500 ${
+            isCurrentSong && isPlaying ? 'scale-105' : 'group-hover:scale-105 group-hover:grayscale-[0.55]'
           }`}
           loading="lazy"
           draggable={false}
         />
 
-        {/* 播放状态遮罩 */}
-        <div
-          className={`absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity duration-300 ${
-            isCurrentSong ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          }`}
+        {/* 左右按钮 */}
+        <span
+          className="absolute bottom-2 left-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100 hover:!bg-[#fa586a]"
+          onClick={(e) => { e.stopPropagation(); }}
         >
           {isCurrentSong && isPlaying ? (
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-[2px]">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="w-1 rounded-full bg-white"
+                  className="w-[2px] rounded-full bg-white"
                   style={{
-                    height: '16px',
+                    height: '12px',
                     animation: `equalizer 0.6s ease-in-out ${i * 0.1}s infinite alternate`,
                   }}
                 />
               ))}
             </div>
           ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-transform duration-200 group-hover:scale-110">
-              {isCurrentSong ? (
-                <Play size={20} fill="white" className="ml-0.5 text-white" />
-              ) : (
-                <Play size={20} fill="white" className="ml-0.5 text-white" />
-              )}
-            </div>
+            <Play size={14} fill="white" className="ml-0.5" />
           )}
-        </div>
+        </span>
+        <span
+          className="absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100 hover:!bg-[#fa586a]"
+          onClick={(e) => { e.stopPropagation(); }}
+        >
+          <MoreHorizontal size={14} />
+        </span>
 
         {/* Apple Music Logo */}
         <div className="absolute right-2 top-2 flex items-center gap-0.5 rounded-md bg-black/30 px-1.5 py-0.5 backdrop-blur-sm">

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Home, LayoutGrid, Radio, Music, Search } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
-import { useGlassParams } from '@/store/useGlassParams';
-import LiquidGlassBox from './LiquidGlassBox';
 import { TabType } from '@/types';
 
 const tabs: { key: TabType; label: string; icon: typeof Home }[] = [
@@ -10,12 +8,12 @@ const tabs: { key: TabType; label: string; icon: typeof Home }[] = [
   { key: 'discover', label: '新发现', icon: LayoutGrid },
   { key: 'radio', label: '广播', icon: Radio },
   { key: 'library', label: '资料库', icon: Music },
+  { key: 'search', label: '搜索', icon: Search },
 ];
 
 export default function BottomNav() {
   const activeTab = useMusicStore((s) => s.activeTab);
   const setActiveTab = useMusicStore((s) => s.setActiveTab);
-  const { params: glassParams } = useGlassParams();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -25,31 +23,21 @@ export default function BottomNav() {
 
   return (
     <div
-      className={`fixed bottom-6 left-1/2 z-50 w-[90%] max-w-[400px] -translate-x-1/2 transition-all duration-500 ${
-        mounted ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+      className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-500 ${
+        mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
       }`}
     >
-      <LiquidGlassBox
+      {/* 毛玻璃背景 */}
+      <div 
         className="w-full"
-        style={{ borderRadius: Math.min(glassParams.radius, 32) }}
-        options={{
-          radius: Math.min(glassParams.radius, 32),
-          glassThickness: glassParams.glassThickness,
-          bezelWidth: glassParams.bezelWidth,
-          ior: glassParams.ior,
-          scaleRatio: glassParams.scaleRatio,
-          blurAmount: glassParams.blurAmount,
-          specularOpacity: glassParams.specularOpacity,
-          specularSaturation: glassParams.specularSaturation,
-        }}
-        visualOptions={{
-          shadowBlur: glassParams.shadowBlur,
-          shadowSpread: glassParams.shadowSpread,
-          outerShadowBlur: glassParams.outerShadowBlur,
-          tintOpacity: glassParams.tintOpacity,
+        style={{
+          background: 'rgba(28, 28, 30, 0.85)',
+          backdropFilter: 'blur(40px) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(40px) saturate(1.4)',
+          borderTop: '0.5px solid rgba(255, 255, 255, 0.08)',
         }}
       >
-        <div className="flex h-16 items-center justify-between px-2">
+        <div className="flex h-[50px] items-center justify-around px-2 max-w-[500px] mx-auto">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.key;
             const Icon = tab.icon;
@@ -57,25 +45,18 @@ export default function BottomNav() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className="group relative flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-transform duration-150 active:scale-95"
+                className="group relative flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-transform duration-100 active:scale-[0.92] min-w-0"
               >
-                {/* 激活指示器背景 */}
-                {isActive && (
-                  <div
-                    className="absolute inset-1 rounded-2xl transition-all duration-300"
-                    style={{ background: 'rgba(255, 45, 85, 0.12)' }}
-                  />
-                )}
                 <Icon
                   size={22}
-                  strokeWidth={isActive ? 2.5 : 1.5}
-                  className={`relative z-10 transition-all duration-200 ${
-                    isActive ? 'text-[#FF2D55] scale-105' : 'text-white/70'
+                  strokeWidth={isActive ? 2.2 : 1.5}
+                  className={`transition-all duration-200 ${
+                    isActive ? 'text-white' : 'text-white/40'
                   }`}
                 />
                 <span
-                  className={`relative z-10 text-[10px] font-medium transition-all duration-200 ${
-                    isActive ? 'text-[#FF2D55] font-semibold' : 'text-white/60'
+                  className={`text-[10px] font-medium transition-all duration-200 ${
+                    isActive ? 'text-white' : 'text-white/40'
                   }`}
                 >
                   {tab.label}
@@ -83,26 +64,10 @@ export default function BottomNav() {
               </button>
             );
           })}
-
-          {/* 搜索按钮 - 圆形独立样式 */}
-          <button
-            onClick={() => setActiveTab('search')}
-            className="relative mx-1 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full transition-all duration-150 active:scale-95"
-            style={{
-              background: activeTab === 'search' ? 'rgba(255,45,85,0.15)' : 'rgba(255,255,255,0.15)',
-              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.2)',
-            }}
-          >
-            <Search
-              size={20}
-              strokeWidth={activeTab === 'search' ? 2.5 : 1.5}
-              className={`transition-all duration-200 ${
-                activeTab === 'search' ? 'text-[#FF2D55] scale-105' : 'text-white/70'
-              }`}
-            />
-          </button>
         </div>
-      </LiquidGlassBox>
+        {/* iOS 风格底部安全区域 */}
+        <div className="h-[env(safe-area-inset-bottom,8px)]" />
+      </div>
     </div>
   );
 }

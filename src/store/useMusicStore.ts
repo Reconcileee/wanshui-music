@@ -2,6 +2,17 @@ import { create } from 'zustand';
 import { Song, TabType } from '@/types';
 import { mockSongs } from '@/utils/mockData';
 
+// 用户歌单结构
+export interface UserPlaylist {
+  id: string;
+  name: string;
+  songs: Song[];
+  createdAt: number;
+}
+
+// localStorage key
+const PLAYLIST_STORAGE_KEY_PREFIX = 'music-player-playlist-';
+
 interface MusicState {
   isPlaying: boolean;
   currentSong: Song | null;
@@ -10,6 +21,10 @@ interface MusicState {
   activeTab: TabType;
   progress: number;
   audioRef: HTMLAudioElement | null;
+  
+  // 用户歌单
+  userPlaylists: UserPlaylist[];
+  currentUsername: string | null;
 
   play: () => void;
   pause: () => void;
@@ -20,16 +35,62 @@ interface MusicState {
   setActiveTab: (tab: TabType) => void;
   setProgress: (progress: number) => void;
   initAudio: () => void;
+  
+  // 用户歌单管理
+  loadUserPlaylists: (username: string) => void;
+  createPlaylist: (name: string) => void;
+  deletePlaylist: (playlistId: string) => void;
+  renamePlaylist: (playlistId: string, newName: string) => void;
+  addToPlaylist: (playlistId: string, song: Song) => void;
+  removeFromPlaylist: (playlistId: string, songId: number) => void;
+  getPlaylistSongs: (playlistId: string) => Song[];
+  clearUserPlaylists: () => void;
+}
+
+// 从 localStorage 加载用户歌单
+function loadPlaylistsFromStorage(username: string): UserPlaylist[] {
+  try {
+    const key = PLAYLIST_STORAGE_KEY_PREFIX + username;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {
+    // ignore
+  }
+  // 默认歌单
+  return [
+    {
+      id: 'favorites',
+      name: '喜欢的歌曲',
+      songs: [],
+      createdAt: Date.now(),
+    },
+  ];
+}
+
+// 保存用户歌单到 localStorage
+function savePlaylistsToStorage(username: string, playlists: UserPlaylist[]) {
+  try {
+    const key = PLAYLIST_STORAGE_KEY_PREFIX + username;
+    localStorage.setItem(key, JSON.stringify(playlists));
+  } catch {
+    // ignore
+  }
 }
 
 export const useMusicStore = create<MusicState>((set, get) => ({
   isPlaying: false,
-  currentSong: mockSongs[0] || null,
+  currentSong: null,
   currentIndex: 0,
   playlist: mockSongs,
-  activeTab: 'library',
+  activeTab: 'discover',
   progress: 0,
   audioRef: null,
+  
+  // 用户歌单
+  userPlaylists: [],
+  currentUsername: null,
 
   initAudio: () => {
     const audio = new Audio();
@@ -118,4 +179,89 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   setActiveTab: (tab: TabType) => set({ activeTab: tab }),
   setProgress: (progress: number) => set({ progress }),
+  
+  // 用户歌单管理
+  loadUserPlaylists: (username: string) => {
+    const playlists = loadPlaylistsFromStorage(username);
+    set({ userPlaylists: playlists, currentUsername: username });
+  },
+  
+  createPlaylist: (name: string) => {
+    const { currentUsername, userPlaylists } = get();
+    if (!currentUsername) return;
+    
+    const newPlaylist: UserPlaylist = {
+      id: `playlist-${Date.now()}`,
+      name,
+      songs: [],
+      createdAt: Date.now(),
+    };
+    
+    const updated = [...userPlaylists, newPlaylist];
+    set({ userPlaylists: updated });
+    savePlaylistsToStorage(currentUsername, updated);
+  },
+  
+  deletePlaylist: (playlistId: string) => {
+    const { currentUsername, userPlaylists } = get();
+    if (!currentUsername) return;
+    
+    // 不能删除默认的"喜欢的歌曲"歌单
+    if (playlistId === 'favorites') return;
+    
+    const updated = userPlaylists.filter(p => p.id !== playlistId);
+    set({ userPlaylists: updated });
+    savePlaylistsToStorage(currentUsername, updated);
+  },
+  
+  renamePlaylist: (playlistId: string, newName: string) => {
+    const { currentUsername, userPlaylists } = get();
+    if (!currentUsername) return;
+    
+    const updated = userPlaylists.map(p => 
+      p.id === playlistId ? { ...p, name: newName } : p
+    );
+    set({ userPlaylists: updated });
+    savePlaylistsToStorage(currentUsername, updated);
+  },
+  
+  addToPlaylist: (playlistId: string, song: Song) => {
+    const { currentUsername, userPlaylists } = get();
+    if (!currentUsername) return;
+    
+    const updated = userPlaylists.map(p => {
+      if (p.id === playlistId) {
+        // 检查是否已存在
+        if (p.songs.some(s => s.id === song.id)) return p;
+        return { ...p, songs: [...p.songs, song] };
+      }
+      return p;
+    });
+    set({ userPlaylists: updated });
+    savePlaylistsToStorage(currentUsername, updated);
+  },
+  
+  removeFromPlaylist: (playlistId: string, songId: number) => {
+    const { currentUsername, userPlaylists } = get();
+    if (!currentUsername) return;
+    
+    const updated = userPlaylists.map(p => {
+      if (p.id === playlistId) {
+        return { ...p, songs: p.songs.filter(s => s.id !== songId) };
+      }
+      return p;
+    });
+    set({ userPlaylists: updated });
+    savePlaylistsToStorage(currentUsername, updated);
+  },
+  
+  getPlaylistSongs: (playlistId: string) => {
+    const { userPlaylists } = get();
+    const playlist = userPlaylists.find(p => p.id === playlistId);
+    return playlist?.songs || [];
+  },
+  
+  clearUserPlaylists: () => {
+    set({ userPlaylists: [], currentUsername: null });
+  },
 }));

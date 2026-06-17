@@ -21,6 +21,7 @@ interface MusicState {
   activeTab: TabType;
   progress: number;
   audioRef: HTMLAudioElement | null;
+  loadedAudioUrl: string | null;
   
   // 用户歌单
   userPlaylists: UserPlaylist[];
@@ -32,7 +33,9 @@ interface MusicState {
   next: () => void;
   prev: () => void;
   playSong: (index: number) => void;
+  playSongObject: (song: Song) => void;
   setActiveTab: (tab: TabType) => void;
+  addSongsToPlaylist: (songs: Song[]) => void;
   setProgress: (progress: number) => void;
   initAudio: () => void;
   
@@ -87,6 +90,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   activeTab: 'discover',
   progress: 0,
   audioRef: null,
+  loadedAudioUrl: null,
   
   // 用户歌单
   userPlaylists: [],
@@ -94,7 +98,6 @@ export const useMusicStore = create<MusicState>((set, get) => ({
 
   initAudio: () => {
     const audio = new Audio();
-    audio.crossOrigin = 'anonymous';
     audio.addEventListener('ended', () => {
       get().next();
     });
@@ -107,16 +110,22 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const { currentSong } = get();
     if (currentSong) {
       audio.src = currentSong.audioUrl;
+      set({ loadedAudioUrl: currentSong.audioUrl });
     }
   },
 
   play: () => {
-    const { audioRef, currentSong } = get();
-    if (!audioRef) return;
-    if (currentSong && audioRef.src !== currentSong.audioUrl) {
-      audioRef.src = currentSong.audioUrl;
+    const { audioRef, currentSong, loadedAudioUrl } = get();
+    if (!audioRef) {
+      get().initAudio();
     }
-    audioRef.play().catch(() => {});
+    const audio = get().audioRef;
+    if (!audio) return;
+    if (currentSong && loadedAudioUrl !== currentSong.audioUrl) {
+      audio.src = currentSong.audioUrl;
+      set({ loadedAudioUrl: currentSong.audioUrl });
+    }
+    audio.play().catch(() => {});
     set({ isPlaying: true });
   },
 
@@ -128,12 +137,7 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   toggle: () => {
-    const { isPlaying, audioRef } = get();
-    if (!audioRef) {
-      get().initAudio();
-      setTimeout(() => get().play(), 0);
-      return;
-    }
+    const { isPlaying } = get();
     if (isPlaying) {
       get().pause();
     } else {
@@ -145,7 +149,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const { playlist, currentIndex } = get();
     const nextIndex = (currentIndex + 1) % playlist.length;
     const nextSong = playlist[nextIndex];
-    set({ currentIndex: nextIndex, currentSong: nextSong, isPlaying: true });
+    set({ currentIndex: nextIndex, currentSong: nextSong, isPlaying: true, loadedAudioUrl: nextSong.audioUrl });
+    if (!get().audioRef) get().initAudio();
     const { audioRef } = get();
     if (audioRef) {
       audioRef.src = nextSong.audioUrl;
@@ -157,7 +162,8 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const { playlist, currentIndex } = get();
     const prevIndex = (currentIndex - 1 + playlist.length) % playlist.length;
     const prevSong = playlist[prevIndex];
-    set({ currentIndex: prevIndex, currentSong: prevSong, isPlaying: true });
+    set({ currentIndex: prevIndex, currentSong: prevSong, isPlaying: true, loadedAudioUrl: prevSong.audioUrl });
+    if (!get().audioRef) get().initAudio();
     const { audioRef } = get();
     if (audioRef) {
       audioRef.src = prevSong.audioUrl;
@@ -169,7 +175,26 @@ export const useMusicStore = create<MusicState>((set, get) => ({
     const { playlist } = get();
     const song = playlist[index];
     if (!song) return;
-    set({ currentIndex: index, currentSong: song, isPlaying: true });
+    set({ currentIndex: index, currentSong: song, isPlaying: true, loadedAudioUrl: song.audioUrl });
+    if (!get().audioRef) get().initAudio();
+    const { audioRef } = get();
+    if (audioRef) {
+      audioRef.src = song.audioUrl;
+      audioRef.play().catch(() => {});
+    }
+  },
+
+  playSongObject: (song: Song) => {
+    const { playlist } = get();
+    const existIdx = playlist.findIndex(s => s.id === song.id);
+    if (existIdx >= 0) {
+      get().playSong(existIdx);
+      return;
+    }
+    const newPlaylist = [...playlist, song];
+    const newIdx = newPlaylist.length - 1;
+    set({ playlist: newPlaylist, currentIndex: newIdx, currentSong: song, isPlaying: true, loadedAudioUrl: song.audioUrl });
+    if (!get().audioRef) get().initAudio();
     const { audioRef } = get();
     if (audioRef) {
       audioRef.src = song.audioUrl;
@@ -178,6 +203,15 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   },
 
   setActiveTab: (tab: TabType) => set({ activeTab: tab }),
+
+  addSongsToPlaylist: (songs: Song[]) => {
+    const { playlist } = get();
+    const existingIds = new Set(playlist.map(s => s.id));
+    const newSongs = songs.filter(s => !existingIds.has(s.id));
+    if (newSongs.length > 0) {
+      set({ playlist: [...playlist, ...newSongs] });
+    }
+  },
   setProgress: (progress: number) => set({ progress }),
   
   // 用户歌单管理

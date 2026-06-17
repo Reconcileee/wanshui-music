@@ -1,6 +1,16 @@
 import { useRef, useEffect, useState } from 'react';
-import { ArrowLeft, Play, Pause, SkipBack, SkipForward, MoreHorizontal, ChevronDown } from 'lucide-react';
-import LiquidGlassBox from '@/components/LiquidGlassBox';
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Shuffle,
+  Repeat,
+  Star,
+  MoreHorizontal,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 
 interface LyricLine {
@@ -14,60 +24,31 @@ interface LyricsPageProps {
 }
 
 const SAMPLE_LYRICS: LyricLine[] = [
-  { time: 0, text: '♪ 前奏 ♪' },
-  { time: 5, text: '夜色渐浓' },
-  { time: 10, text: '星光闪烁在天空' },
-  { time: 15, text: '我独自漫步在这城市' },
-  { time: 20, text: '寻找着属于我的方向' },
-  { time: 25, text: '' },
-  { time: 30, text: '风吹过脸庞' },
-  { time: 35, text: '带来一丝凉意' },
-  { time: 40, text: '我想起了那些往事' },
-  { time: 45, text: '那些曾经的梦想' },
-  { time: 50, text: '' },
-  { time: 55, text: '时间在流逝' },
-  { time: 60, text: '岁月在变迁' },
-  { time: 65, text: '但我依然坚持着' },
-  { time: 70, text: '那份最初的信念' },
-  { time: 75, text: '' },
-  { time: 80, text: '无论多远' },
-  { time: 85, text: '我都会继续前行' },
-  { time: 90, text: '直到找到那个终点' },
-  { time: 95, text: '那个属于我的终点' },
-  { time: 100, text: '' },
-  { time: 105, text: '♪ 间奏 ♪' },
-  { time: 115, text: '夜色渐浓' },
-  { time: 120, text: '星光闪烁在天空' },
-  { time: 125, text: '我独自漫步在这城市' },
-  { time: 130, text: '寻找着属于我的方向' },
-  { time: 135, text: '' },
-  { time: 140, text: '风吹过脸庞' },
-  { time: 145, text: '带来一丝凉意' },
-  { time: 150, text: '我想起了那些往事' },
-  { time: 155, text: '那些曾经的梦想' },
-  { time: 160, text: '' },
-  { time: 165, text: '时间在流逝' },
-  { time: 170, text: '岁月在变迁' },
-  { time: 175, text: '但我依然坚持着' },
-  { time: 180, text: '那份最初的信念' },
-  { time: 185, text: '' },
-  { time: 190, text: '无论多远' },
-  { time: 195, text: '我都会继续前行' },
-  { time: 200, text: '直到找到那个终点' },
-  { time: 205, text: '那个属于我的终点' },
-  { time: 210, text: '' },
-  { time: 215, text: '♪ 结尾 ♪' },
+  { time: 0, text: '之后他就恢复了自证这个解释' },
+  { time: 4, text: '词汇' },
+  { time: 8, text: '因为这才是挥手向云彩道别的滋味' },
+  { time: 14, text: '小船静静往返' },
+  { time: 18, text: '马谛斯的海岸' },
+  { time: 22, text: '星空下的夜晚' },
+  { time: 26, text: '交给梵谷点燃' },
+  { time: 30, text: '梦美的太短暂' },
+  { time: 34, text: '孟克桥上的呐喊' },
 ];
 
 export default function LyricsPage({ lyrics = SAMPLE_LYRICS, onClose }: LyricsPageProps) {
   const { isPlaying, currentSong, toggle, next, prev } = useMusicStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentTime, setCurrentTime] = useState(0);
-  const [currentLineIndex, setCurrentLineIndex] = useState(0);
+  const [currentLineIndex, setCurrentLineIndex] = useState(3);
+  const [volume, setVolume] = useState(0.6);
+  const [shuffle, setShuffle] = useState(false);
+  const [repeat, setRepeat] = useState(false);
+  const [favorited, setFavorited] = useState(false);
+  const [muted, setMuted] = useState(false);
 
   useEffect(() => {
     if (!isPlaying) return;
-    
+
     const interval = setInterval(() => {
       setCurrentTime(prev => {
         const newTime = prev + 0.1;
@@ -76,15 +57,15 @@ export default function LyricsPage({ lyrics = SAMPLE_LYRICS, onClose }: LyricsPa
           if (!nextLine) return true;
           return newTime >= line.time && newTime < nextLine.time;
         });
-        
+
         if (newIndex !== -1 && newIndex !== currentLineIndex) {
           setCurrentLineIndex(newIndex);
         }
-        
-        if (newTime > lyrics[lyrics.length - 1].time + 10) {
+
+        if (newTime > (lyrics[lyrics.length - 1]?.time + 10 || 220)) {
           return 0;
         }
-        
+
         return newTime;
       });
     }, 100);
@@ -94,12 +75,12 @@ export default function LyricsPage({ lyrics = SAMPLE_LYRICS, onClose }: LyricsPa
 
   useEffect(() => {
     if (!containerRef.current) return;
-    
+
     const container = containerRef.current;
     const lineHeight = 52;
     const containerHeight = container.clientHeight;
     const scrollTo = currentLineIndex * lineHeight - containerHeight / 2 + lineHeight / 2;
-    
+
     container.scrollTo({
       top: Math.max(0, scrollTo),
       behavior: 'smooth',
@@ -112,125 +93,186 @@ export default function LyricsPage({ lyrics = SAMPLE_LYRICS, onClose }: LyricsPa
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const totalTime = lyrics[lyrics.length - 1]?.time + 10 || 220;
+  const totalTime = 224; // 3:44
+  const songTitle = currentSong?.title || '最伟大的作品';
+  const songArtist = currentSong?.artist || '周杰伦';
+  const songCover = currentSong?.cover || '';
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col">
+    <div className="fixed inset-0 z-[200] flex overflow-hidden">
       {/* 背景 - 专辑封面模糊 (Apple Music 风格) */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: currentSong ? `url('${currentSong.cover}')` : 'none',
-          filter: 'blur(80px) brightness(0.35) saturate(1.5)',
+          backgroundImage: songCover ? `url('${songCover}')` : 'none',
+          filter: 'blur(60px) brightness(0.4) saturate(1.4)',
           transform: 'scale(1.3)',
         }}
       />
       {/* 深色渐变遮罩 */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/70" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/60" />
 
-      {/* 顶部导航 - Apple Music 风格 */}
-      <header className="relative z-10 flex items-center justify-between px-5 py-3 sm:px-6 sm:py-4">
-        <button 
-          onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-black/30 backdrop-blur-md text-white/80 transition-all hover:bg-black/50 hover:text-white"
-        >
-          <ChevronDown size={20} />
-        </button>
-        
-        {currentSong && (
-          <div className="flex flex-col items-center">
-            <div className="text-[11px] font-medium text-white/50 uppercase tracking-wider">正在播放</div>
-            <div className="text-[14px] font-semibold text-white truncate max-w-[200px]">{currentSong.title}</div>
-            <div className="text-[12px] text-white/50 truncate max-w-[200px]">{currentSong.artist}</div>
+      {/* 左侧：专辑 + 播放控制 */}
+      <div className="relative z-10 flex flex-1 flex-col justify-center px-8 py-6 lg:px-12">
+        {/* 专辑封面 */}
+        <div className="relative mx-auto w-full max-w-[340px]">
+          <div className="aspect-square w-full overflow-hidden rounded-lg shadow-2xl shadow-black/60">
+            {songCover ? (
+              <img src={songCover} alt={songTitle} className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full bg-gradient-to-br from-amber-200 via-orange-300 to-rose-400" />
+            )}
           </div>
-        )}
 
-        <button className="flex h-8 w-8 items-center justify-center rounded-full bg-black/30 backdrop-blur-md text-white/80 transition-all hover:bg-black/50 hover:text-white">
-          <MoreHorizontal size={18} />
-        </button>
-      </header>
+          {/* 歌名 + 收藏 + 更多 */}
+          <div className="mt-5 flex items-end justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-[18px] font-semibold text-white">{songTitle}</h2>
+              <p className="truncate text-[14px] text-white/60">{songArtist}</p>
+            </div>
+            <div className="flex flex-shrink-0 items-center gap-1">
+              <button
+                onClick={() => setFavorited(!favorited)}
+                className="flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:text-white"
+              >
+                <Star size={18} fill={favorited ? '#fa2d48' : 'none'} stroke={favorited ? '#fa2d48' : 'currentColor'} />
+              </button>
+              <button className="flex h-7 w-7 items-center justify-center text-white/70 transition-colors hover:text-white">
+                <MoreHorizontal size={18} />
+              </button>
+            </div>
+          </div>
 
-      {/* 歌词区域 - Apple Music 大字体居中风格 */}
-      <div 
+          {/* 进度条 */}
+          <div className="mt-3 flex items-center gap-2">
+            <span className="w-9 text-right text-[11px] font-medium text-white/50">
+              {formatTime(currentTime)}
+            </span>
+            <div className="group relative h-[3px] flex-1 cursor-pointer rounded-full bg-white/20">
+              <div
+                className="absolute left-0 top-0 h-full rounded-full bg-white/70"
+                style={{ width: `${(currentTime / totalTime) * 100}%` }}
+              />
+              <div
+                className="absolute top-1/2 h-[10px] w-[10px] -translate-y-1/2 rounded-full bg-white shadow opacity-0 transition-opacity group-hover:opacity-100"
+                style={{ left: `calc(${(currentTime / totalTime) * 100}% - 5px)` }}
+              />
+            </div>
+            <span className="w-9 text-[11px] font-medium text-white/50">
+              -{formatTime(Math.max(0, totalTime - currentTime))}
+            </span>
+          </div>
+
+          {/* 播放控制按钮 */}
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              onClick={() => setShuffle(!shuffle)}
+              className={`transition-colors ${shuffle ? 'text-[#fa2d48]' : 'text-white/60 hover:text-white'}`}
+            >
+              <Shuffle size={16} />
+            </button>
+            <button
+              onClick={prev}
+              className="text-white/80 transition-colors hover:text-white"
+            >
+              <SkipBack size={28} fill="currentColor" />
+            </button>
+            <button
+              onClick={toggle}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-black shadow-lg transition-transform active:scale-95"
+            >
+              {isPlaying ? <Pause size={22} fill="black" /> : <Play size={22} fill="black" className="ml-0.5" />}
+            </button>
+            <button
+              onClick={next}
+              className="text-white/80 transition-colors hover:text-white"
+            >
+              <SkipForward size={28} fill="currentColor" />
+            </button>
+            <button
+              onClick={() => setRepeat(!repeat)}
+              className={`transition-colors ${repeat ? 'text-[#fa2d48]' : 'text-white/60 hover:text-white'}`}
+            >
+              <Repeat size={16} />
+            </button>
+          </div>
+
+          {/* 音量 */}
+          <div className="mt-4 flex items-center gap-2">
+            <button
+              onClick={() => setMuted(!muted)}
+              className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-white/60 transition-colors hover:text-white"
+            >
+              {muted || volume === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            </button>
+            <div className="group relative h-[3px] flex-1 cursor-pointer rounded-full bg-white/20">
+              <div
+                className="absolute left-0 top-0 h-full rounded-full bg-white/80"
+                style={{ width: `${muted ? 0 : volume * 100}%` }}
+              />
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={muted ? 0 : volume}
+                onChange={(e) => {
+                  setVolume(parseFloat(e.target.value));
+                  setMuted(false);
+                }}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </div>
+            <button
+              onClick={onClose}
+              className="flex-shrink-0 text-[11px] font-medium text-white/60 transition-colors hover:text-white"
+              title="收起歌词"
+            >
+              收起
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 右侧：滚动歌词 */}
+      <div
         ref={containerRef}
-        className="relative z-10 flex-1 overflow-y-auto px-6 py-4 scrollbar-hide"
+        className="relative z-10 hidden flex-1 overflow-y-auto px-8 py-6 scrollbar-hide md:block"
         style={{ scrollBehavior: 'smooth' }}
       >
-        <div className="max-w-2xl mx-auto space-y-2">
-          {/* 顶部留白 */}
-          <div className="h-[25vh]" />
-          
+        <div className="mx-auto max-w-md pl-4">
+          {/* 顶部留白，让第一行能滚动到中央 */}
+          <div className="h-[40vh]" />
+
           {lyrics.map((line, index) => {
             const isActive = index === currentLineIndex;
             const isPast = index < currentLineIndex;
-            
+
             return (
               <div
                 key={index}
-                className={`text-center transition-all duration-500 ease-out ${
+                className={`transition-all duration-500 ease-out ${
                   isActive
-                    ? 'text-white text-[26px] sm:text-[28px] font-bold scale-[1.02]'
+                    ? 'text-white text-[30px] font-semibold'
                     : isPast
-                      ? 'text-white/25 text-[20px] sm:text-[22px] font-medium'
-                      : 'text-white/40 text-[20px] sm:text-[22px] font-medium'
+                      ? 'text-white/25 text-[28px] font-normal'
+                      : 'text-white/40 text-[28px] font-normal'
                 }`}
                 style={{
                   minHeight: '52px',
                   lineHeight: '52px',
-                  filter: isActive ? 'none' : isPast ? 'blur(0.3px)' : 'blur(0.5px)',
+                  filter: isActive ? 'none' : 'blur(0.3px)',
                 }}
               >
-                {line.text || '·'}
+                <span className="truncate">{line.text || '·'}</span>
               </div>
             );
           })}
-          
+
           {/* 底部留白 */}
-          <div className="h-[30vh]" />
+          <div className="h-[40vh]" />
         </div>
       </div>
-
-      {/* 底部播放控制 - Apple Music 简约风格 */}
-      <footer className="relative z-10 px-5 sm:px-6 pb-6 sm:pb-8">
-        {/* 进度条 */}
-        <div className="mb-4 flex items-center gap-2">
-          <span className="text-[10px] text-white/40 font-medium w-[32px] text-right">{formatTime(currentTime)}</span>
-          <div className="flex-1 h-[3px] bg-white/15 rounded-full overflow-hidden relative">
-            <div
-              className="absolute left-0 top-0 h-full bg-white/80 rounded-full transition-all duration-100"
-              style={{ width: `${(currentTime / totalTime) * 100}%` }}
-            />
-            {/* 拖拽圆点 */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 h-3 w-3 bg-white rounded-full shadow-md transition-all duration-100"
-              style={{ left: `calc(${(currentTime / totalTime) * 100}% - 6px)` }}
-            />
-          </div>
-          <span className="text-[10px] text-white/40 font-medium w-[32px]">-{formatTime(Math.max(0, totalTime - currentTime))}</span>
-        </div>
-        
-        {/* 播放控制按钮 */}
-        <div className="flex items-center justify-center gap-8">
-          <button 
-            onClick={prev}
-            className="flex h-9 w-9 items-center justify-center text-white/70 transition-colors hover:text-white"
-          >
-            <SkipBack size={24} fill="currentColor" />
-          </button>
-          <button
-            onClick={toggle}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-black shadow-xl transition-transform active:scale-[0.93]"
-          >
-            {isPlaying ? <Pause size={26} fill="black" /> : <Play size={26} fill="black" className="ml-1" />}
-          </button>
-          <button 
-            onClick={next}
-            className="flex h-9 w-9 items-center justify-center text-white/70 transition-colors hover:text-white"
-          >
-            <SkipForward size={24} fill="currentColor" />
-          </button>
-        </div>
-      </footer>
     </div>
   );
 }

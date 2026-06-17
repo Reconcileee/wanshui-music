@@ -68,7 +68,6 @@ export default function MiniPlayer() {
           shadowBlur: glassParams.shadowBlur,
           shadowSpread: glassParams.shadowSpread,
           outerShadowBlur: glassParams.outerShadowBlur,
-          tintOpacity: glassParams.tintOpacity,
         }}
       >
         <div className="flex h-[64px] sm:h-[72px] items-center gap-2 sm:gap-3 px-2 sm:px-3 pr-3 sm:pr-4">

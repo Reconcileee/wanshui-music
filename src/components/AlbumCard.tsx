@@ -28,17 +28,20 @@ export default function AlbumCard({ song, index }: AlbumCardProps) {
         <img
           src={song.cover}
           alt={song.album}
-          className={`h-full w-full object-cover transition-[transform,filter] duration-500 ${
-            isCurrentSong && isPlaying ? 'scale-105' : 'group-hover:scale-105 group-hover:grayscale-[0.55]'
+          className={`h-full w-full object-cover transition-transform duration-500 ${
+            isCurrentSong && isPlaying ? 'scale-105' : 'group-hover:scale-105'
           }`}
           loading="lazy"
           draggable={false}
         />
 
+        {/* 悬停灰度遮罩 - 带有入场和出场动画 */}
+        <div className="cover-hover-overlay pointer-events-none absolute inset-0 bg-black/25" style={{ backdropFilter: 'grayscale(0.6)' }} />
+
         {/* 左右按钮 */}
         <span
           className="absolute bottom-2 left-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100 hover:!bg-[#fa586a]"
-          onClick={(e) => { e.stopPropagation(); }}
+          onClick={(e) => { e.stopPropagation(); playSong(index); }}
         >
           {isCurrentSong && isPlaying ? (
             <div className="flex items-center gap-[2px]">

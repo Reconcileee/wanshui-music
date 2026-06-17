@@ -1,6 +1,7 @@
 import { Song } from '@/types';
 
-export const mockSongs: Song[] = [
+// 远程示例歌曲
+const remoteSongs: Song[] = [
   {
     id: 1,
     title: 'the cure',
@@ -56,5 +57,43 @@ export const mockSongs: Song[] = [
     duration: 282,
   },
 ];
+
+// 本地歌曲条目结构
+interface LocalSongEntry {
+  id: number;
+  title: string;
+  artist: string;
+  album: string;
+  cover: string;
+  audioUrl: string;
+  duration: number;
+  lyricsUrl?: string;
+  lyricsSrtUrl?: string;
+}
+
+const base = import.meta.env.BASE_URL;
+
+// 初始歌曲列表（仅远程）
+export const mockSongs: Song[] = [...remoteSongs];
+
+// 异步加载本地歌曲并合并到 store
+export async function loadLocalSongs(): Promise<Song[]> {
+  try {
+    const resp = await fetch(base + 'musics/index.json');
+    if (!resp.ok) return [];
+    const data: LocalSongEntry[] = await resp.json();
+    return data.map(entry => ({
+      id: entry.id,
+      title: entry.title,
+      artist: entry.artist,
+      album: entry.album,
+      cover: entry.cover.startsWith('http') ? entry.cover : base + entry.cover,
+      audioUrl: entry.audioUrl.startsWith('http') ? entry.audioUrl : base + entry.audioUrl,
+      duration: entry.duration,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 export const backgroundUrl = 'https://is1-ssl.mzstatic.com/image/thumb/Features126/v4/72/8c/72/728c72d9-7c5f-4d0a-8c8f-5c5f5c5f5c5f/source/800x500bb.jpg';

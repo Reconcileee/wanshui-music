@@ -235,6 +235,30 @@ html, body, #root {
   animation: hover-glow 1.5s ease-in-out infinite;
 }
 
+/* 歌名跑马灯：暂停时从右到左循环滚动 */
+@keyframes title-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: title-marquee 12s linear infinite;
+}
+
+/* 封面悬停灰度遮罩 - 灰度淡入淡出 */
+.cover-hover-overlay {
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.group:hover .cover-hover-overlay {
+  opacity: 1;
+}
+
 /* ============================================================
    液态玻璃参数控制面板
    ============================================================ */

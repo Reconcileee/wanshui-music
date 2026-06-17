@@ -5,11 +5,13 @@ import { GlassParamsProvider } from '@/store/useGlassParams';
 import AppleMusicDiscover from '@/pages/AppleMusicDiscover';
 import LyricsPage from '@/pages/LyricsPage';
 import LoginModal from '@/components/LoginModal';
+import { loadLocalSongs } from '@/utils/mockData';
 
 function AppInner() {
   const initAudio = useMusicStore((s) => s.initAudio);
   const loadUserPlaylists = useMusicStore((s) => s.loadUserPlaylists);
   const clearUserPlaylists = useMusicStore((s) => s.clearUserPlaylists);
+  const addSongsToPlaylist = useMusicStore((s) => s.addSongsToPlaylist);
   const [showLyrics, setShowLyrics] = useState(false);
   const showLoginModal = useAuthStore((s) => s.showLoginModal);
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
@@ -18,6 +20,13 @@ function AppInner() {
   useEffect(() => {
     initAudio();
   }, [initAudio]);
+
+  // 加载本地歌曲
+  useEffect(() => {
+    loadLocalSongs().then(songs => {
+      if (songs.length > 0) addSongsToPlaylist(songs);
+    });
+  }, [addSongsToPlaylist]);
 
   // 用户登录状态变化时加载/清除歌单
   useEffect(() => {

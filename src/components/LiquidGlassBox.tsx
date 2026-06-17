@@ -18,10 +18,6 @@ interface LiquidGlassBoxProps {
     shadowBlur?: number;
     shadowSpread?: number;
     outerShadowBlur?: number;
-    tintOpacity?: number;
-    tintR?: number;
-    tintG?: number;
-    tintB?: number;
   };
   /** 是否启用按压交互效果 (参考 callstack/liquid-glass) */
   interactive?: boolean;
@@ -31,8 +27,6 @@ interface LiquidGlassBoxProps {
    * - 'none': 无玻璃效果（透明视图）
    */
   effect?: GlassEffect;
-  /** 着色颜色 (参考 callstack/liquid-glass) */
-  tintColor?: string;
   /** 颜色方案 (参考 callstack/liquid-glass) */
   colorScheme?: ColorScheme;
   /** 是否动画化效果变化 */
@@ -43,10 +37,9 @@ interface LiquidGlassBoxProps {
 
 /**
  * 正宗 iOS26 Liquid Glass 组件
- * 五层结构：
+ * 四层结构：
  *  Layer 0 (base-blur):  backdrop-filter blur + saturate
  *  Layer 1 (effect):     SVG filter 物理折射
- *  Layer 2 (tint):       玻璃着色 + 渐变
  *  Layer 3 (edge):       1px 边框 + 顶部高光 + 底部微光
  *  Layer 4 (content):    内容层
  */
@@ -58,7 +51,6 @@ export default function LiquidGlassBox({
   visualOptions = {},
   interactive = false,
   effect = 'regular',
-  tintColor,
   colorScheme = 'system',
   animated = true,
   animationDuration = 300,
@@ -77,42 +69,6 @@ export default function LiquidGlassBox({
     fallbackBlur: 'blur(16px) saturate(1.4)',
   });
 
-  // 解析 tintColor 为 RGB 值
-  const parseTintColor = useCallback((color?: string) => {
-    if (!color) return { r: 255, g: 255, b: 255 };
-    
-    // 处理 hex 格式
-    if (color.startsWith('#')) {
-      const hex = color.slice(1);
-      if (hex.length === 3) {
-        return {
-          r: parseInt(hex[0] + hex[0], 16),
-          g: parseInt(hex[1] + hex[1], 16),
-          b: parseInt(hex[2] + hex[2], 16),
-        };
-      }
-      if (hex.length === 6) {
-        return {
-          r: parseInt(hex.slice(0, 2), 16),
-          g: parseInt(hex.slice(2, 4), 16),
-          b: parseInt(hex.slice(4, 6), 16),
-        };
-      }
-    }
-    
-    // 处理 rgb/rgba 格式
-    const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-    if (rgbMatch) {
-      return {
-        r: parseInt(rgbMatch[1], 10),
-        g: parseInt(rgbMatch[2], 10),
-        b: parseInt(rgbMatch[3], 10),
-      };
-    }
-    
-    return { r: 255, g: 255, b: 255 };
-  }, []);
-
   // 根据效果模式调整参数
   const getEffectParams = useCallback(() => {
     switch (effect) {
@@ -120,7 +76,6 @@ export default function LiquidGlassBox({
         return {
           blurAmount: 0.3,
           specularOpacity: 0.3,
-          tintOpacityBase: 0.02,
           backdropBlur: 16,
           backdropSaturate: 1.3,
         };
@@ -128,7 +83,6 @@ export default function LiquidGlassBox({
         return {
           blurAmount: 0.5,
           specularOpacity: 0.5,
-          tintOpacityBase: 0.06,
           backdropBlur: 24,
           backdropSaturate: 1.6,
         };
@@ -136,7 +90,6 @@ export default function LiquidGlassBox({
         return {
           blurAmount: 0,
           specularOpacity: 0,
-          tintOpacityBase: 0,
           backdropBlur: 0,
           backdropSaturate: 1,
         };
@@ -144,7 +97,6 @@ export default function LiquidGlassBox({
         return {
           blurAmount: 0.5,
           specularOpacity: 0.5,
-          tintOpacityBase: 0.06,
           backdropBlur: 24,
           backdropSaturate: 1.6,
         };
@@ -152,7 +104,7 @@ export default function LiquidGlassBox({
   }, [effect]);
 
   // 用序列化字符串作为依赖，避免对象引用变化导致不必要的重建
-  const optionsKey = JSON.stringify({ ...options, effect, tintColor, colorScheme });
+  const optionsKey = JSON.stringify({ ...options, effect, colorScheme });
 
   // 防抖重建：延迟 150ms，避免滑块拖动时频繁重建
   const scheduleRebuild = useCallback(() => {
@@ -277,15 +229,8 @@ export default function LiquidGlassBox({
   const shadowSpread = visualOptions.shadowSpread ?? -5;
   const outerShadowBlur = visualOptions.outerShadowBlur ?? 24;
 
-  // 解析 tintColor
-  const parsedTint = parseTintColor(tintColor);
-  const tintR = visualOptions.tintR ?? parsedTint.r;
-  const tintG = visualOptions.tintG ?? parsedTint.g;
-  const tintB = visualOptions.tintB ?? parsedTint.b;
-
-  // 根据效果模式调整 tintOpacity
+  // 效果参数
   const effectParams = getEffectParams();
-  const tintOpacity = visualOptions.tintOpacity ?? effectParams.tintOpacityBase;
 
   const currentBackdropFilter = effect === 'none' ? '' : (filterState.ready ? filterState.filterUrl : filterState.fallbackBlur);
 
@@ -343,26 +288,6 @@ export default function LiquidGlassBox({
             isolation: 'isolate',
             opacity: filterState.ready ? 1 : 0.85,
             transition: `opacity ${transitionDuration} ease, backdrop-filter ${transitionDuration} ease`,
-          }}
-        />
-      )}
-
-      {/* Layer 2: 玻璃着色层 */}
-      {effect !== 'none' && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            zIndex: 2,
-            borderRadius: 'inherit',
-            background: `
-              linear-gradient(
-                180deg,
-                rgba(${tintR}, ${tintG}, ${tintB}, ${0.14 + tintOpacity * 2}) 0%,
-                rgba(${tintR}, ${tintG}, ${tintB}, ${0.06 + tintOpacity}) 40%,
-                rgba(${tintR}, ${tintG}, ${tintB}, ${0.03 + tintOpacity * 0.5}) 100%
-              )
-            `,
-            transition: `background ${transitionDuration} ease`,
           }}
         />
       )}

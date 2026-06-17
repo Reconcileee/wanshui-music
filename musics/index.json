@@ -1,0 +1,13 @@
+[
+  {
+    "id": 7,
+    "title": "首都",
+    "artist": "罗大佑",
+    "album": "首都",
+    "cover": "musics/albums/罗大佑/首都_cover.jpg",
+    "audioUrl": "musics/首都/罗大佑 - 首都.mp3",
+    "duration": 331,
+    "lyricsUrl": "musics/lyrics/首都.lrc",
+    "lyricsSrtUrl": "musics/lyrics/首都.srt"
+  }
+]

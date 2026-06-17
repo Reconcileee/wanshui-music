@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef, useLayoutEffect } from 'react';
 import {
   Music,
   Search,
@@ -74,6 +74,7 @@ const NEW_SONGS = [
   { title: '最佳损友', artist: '陈奕迅', cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/a4/fa/86/a4fa86d6-c23a-c37f-1251-00376ff144cd/00602498378830.rgb.jpg/96x96bb.webp' },
   { title: '阴天', artist: '莫文蔚', cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/81/cc/52/81cc5224-3ace-5e3c-468a-17b4b71da831/dj.aqolbuce.jpg/96x96bb.webp' },
   { title: '连名带姓', artist: '张惠妹', cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/4a/ea/32/4aea3283-2bcf-c075-ad2d-c48bf6e19dcd/cover.jpg/96x96bb.webp' },
+  { title: '首都', artist: '罗大佑', cover: import.meta.env.BASE_URL + 'musics/首都/首都_cover.jpg' },
   { title: '一样的月光', artist: '徐佳莹', cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music6/v4/43/52/5e/43525e86-9c47-cb57-5ca5-a374aa7afa40/LaLa.jpg/96x96bb.webp' },
 ];
 
@@ -140,7 +141,7 @@ const SONGS = [
 ];
 
 // ---- Sidebar ----
-function Sidebar({ activeTab }: { activeTab: string }) {
+function Sidebar({ activeTab, onTabChange }: { activeTab: string; onTabChange: (tab: string) => void }) {
   const openLoginModal = useAuthStore((s) => s.openLoginModal);
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const username = useAuthStore((s) => s.username);
@@ -226,18 +227,23 @@ function Sidebar({ activeTab }: { activeTab: string }) {
         </div>
 
         {/* Search */}
-        <div className="mb-5 flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] text-white transition-colors hover:bg-white/[0.06]">
+        <button
+          onClick={() => onTabChange('search')}
+          className={`mb-5 flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] transition-colors ${
+            activeTab === 'search' ? 'bg-[#fa2d48]/15 text-[#fa2d48]' : 'text-white hover:bg-white/[0.06]'
+          }`}
+        >
           <Search size={16} />
           <span>搜索</span>
-        </div>
+        </button>
 
         {/* Main Navigation */}
         <nav className="mb-6">
           {mainNavItems.map((item) => (
-            <a
+            <button
               key={item.id}
-              href="#"
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors ${
+              onClick={() => onTabChange(item.id)}
+              className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors w-full ${
                 activeTab === item.id
                   ? 'bg-[#fa2d48]/15 text-[#fa2d48]'
                   : 'text-white hover:bg-white/[0.04]'
@@ -245,7 +251,7 @@ function Sidebar({ activeTab }: { activeTab: string }) {
             >
               <item.icon size={16} />
               <span>{item.label}</span>
-            </a>
+            </button>
           ))}
         </nav>
 
@@ -412,11 +418,11 @@ function Sidebar({ activeTab }: { activeTab: string }) {
 }
 
 // ---- Featured Card (Apple Music 大横幅风格) ----
-function FeaturedCard({ item, compact = false }: { item: (typeof FEATURED)[0]; compact?: boolean }) {
+function FeaturedCard({ item, compact = false, onPlay }: { item: (typeof FEATURED)[0]; compact?: boolean; onPlay?: () => void }) {
   if (compact) {
     return (
       <div 
-        className="group relative cursor-pointer overflow-hidden rounded-2xl flex-shrink-0" 
+        className="group relative cursor-pointer overflow-hidden rounded-2xl flex-shrink-0 ring-1 ring-inset ring-white/20" 
         style={{ 
           aspectRatio: '4/3',
           width: '320px'
@@ -428,7 +434,7 @@ function FeaturedCard({ item, compact = false }: { item: (typeof FEATURED)[0]; c
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <button className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-xl transition-transform active:scale-95">
+          <button className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-xl transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onPlay?.(); }}>
             <Play size={24} fill="black" className="ml-1" />
           </button>
         </div>
@@ -450,8 +456,8 @@ function FeaturedCard({ item, compact = false }: { item: (typeof FEATURED)[0]; c
       </div>
 
       {/* 大图卡片 */}
-      <div 
-        className="relative overflow-hidden rounded-2xl"
+      <div
+        className="relative overflow-hidden rounded-2xl ring-1 ring-inset ring-white/20"
         style={{ aspectRatio: '16/9' }}
       >
         <div
@@ -459,8 +465,15 @@ function FeaturedCard({ item, compact = false }: { item: (typeof FEATURED)[0]; c
           style={{ backgroundImage: `url('${item.cover}')` }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
+        {/* 液态玻璃边缘高光 */}
+        <div
+          className="pointer-events-none absolute inset-0 rounded-2xl"
+          style={{
+            boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.18), inset 0 -1px 0 0 rgba(255,255,255,0.06)',
+          }}
+        />
         <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <button className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-xl transition-transform active:scale-95">
+          <button className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-xl transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onPlay?.(); }}>
             <Play size={24} fill="black" className="ml-1" />
           </button>
         </div>
@@ -485,11 +498,13 @@ function SmallCard({ item, onClick, compact = false }: { item: { title: string; 
       onClick={onClick}
     >
       <div className="mb-2.5 aspect-square overflow-hidden rounded-[12px] bg-white/[0.06] relative shadow-lg shadow-black/20">
-        <img src={item.cover} alt={item.title} loading="lazy" className="h-full w-full object-cover transition-[transform,filter] duration-500 group-hover:scale-[1.06] group-hover:grayscale-[0.55]" />
+        <img src={item.cover} alt={item.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
+        {/* 悬停灰度遮罩 - 带有入场和出场动画 */}
+        <div className="cover-hover-overlay pointer-events-none absolute inset-0 bg-black/25" style={{ backdropFilter: 'grayscale(0.6)' }} />
         {/* 左右按钮 */}
         <button
           className="absolute bottom-2 left-2 flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur-sm transition-all duration-300 group-hover:opacity-100 hover:!bg-[#fa586a] active:scale-90"
-          onClick={(e) => { e.stopPropagation(); }}
+          onClick={(e) => { e.stopPropagation(); onClick?.(); }}
         >
           <Play size={16} fill="white" className="ml-0.5" />
         </button>
@@ -507,13 +522,13 @@ function SmallCard({ item, onClick, compact = false }: { item: { title: string; 
 }
 
 // ---- Radio Station Card (圆形封面) ----
-function RadioCard({ item }: { item: { title: string; cover: string } }) {
+function RadioCard({ item, onPlay }: { item: { title: string; cover: string }; onPlay?: () => void }) {
   return (
     <div className="group cursor-pointer flex-shrink-0 w-[140px] transition-transform duration-200 hover:-translate-y-1">
       <div className="mb-2.5 aspect-square overflow-hidden rounded-full bg-white/[0.06] relative shadow-lg shadow-black/20">
         <img src={item.cover} alt={item.title} loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]" />
         <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-md transition-transform active:scale-90">
+          <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-md transition-transform active:scale-90" onClick={(e) => { e.stopPropagation(); onPlay?.(); }}>
             <Play size={18} fill="black" className="ml-0.5" />
           </button>
         </div>
@@ -547,9 +562,9 @@ function VideoCard({ item }: { item: (typeof MUSIC_VIDEOS)[0] }) {
 }
 
 // ---- New Song Row (Apple Music 列表风格) ----
-function NewSongRow({ song, index }: { song: (typeof NEW_SONGS)[0]; index: number }) {
+function NewSongRow({ song, index, onPlay }: { song: (typeof NEW_SONGS)[0]; index: number; onPlay?: () => void }) {
   return (
-    <div className="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.06] cursor-pointer">
+    <div className="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-white/[0.06] cursor-pointer" onClick={onPlay}>
       {/* 序号 */}
       <span className="w-5 text-center text-[13px] font-medium text-white/30 group-hover:hidden">{index + 1}</span>
       <button className="hidden group-hover:flex w-5 items-center justify-center text-white/70">
@@ -614,14 +629,14 @@ function AddToPlaylistMenu({ song, onClose }: { song: Song; onClose: () => void 
 // ---- Song Row ----
 function SongRow({ song, onClick }: { song: (typeof SONGS)[0]; onClick?: () => void }) {
   const [showMenu, setShowMenu] = useState(false);
-  
+
   const fullSong: Song = {
     id: song.title.charCodeAt(0) + song.artist.charCodeAt(0),
     title: song.title,
     artist: song.artist,
     album: song.album,
     cover: song.cover,
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    audioUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(song.title.charCodeAt(0) % 6) + 1}.mp3`,
     duration: 180,
   };
   
@@ -690,10 +705,83 @@ function HorizontalScroll({ children, className = '' }: { children: React.ReactN
   );
 }
 
+// ---- Marquee Title (自动判断是否需要滚动 + 渐隐) ----
+function MarqueeTitle({
+  text,
+  isPlaying,
+  className = '',
+}: {
+  text: string;
+  isPlaying: boolean;
+  className?: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const [overflows, setOverflows] = useState(false);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const container = containerRef.current;
+      const measureEl = measureRef.current;
+      if (!container || !measureEl) return;
+      setOverflows(measureEl.scrollWidth > container.clientWidth + 1);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (containerRef.current) ro.observe(containerRef.current);
+    if (measureRef.current) ro.observe(measureRef.current);
+    return () => ro.disconnect();
+  }, [text]);
+
+  const shouldAnimate = overflows && !isPlaying;
+  const shouldFade = overflows;
+
+  let maskStyle: React.CSSProperties = {};
+  if (shouldFade) {
+    if (shouldAnimate) {
+      maskStyle = {
+        maskImage:
+          'linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)',
+        WebkitMaskImage:
+          'linear-gradient(to right, transparent 0, black 24px, black calc(100% - 24px), transparent 100%)',
+      };
+    } else {
+      maskStyle = {
+        maskImage:
+          'linear-gradient(to right, black calc(100% - 24px), transparent 100%)',
+        WebkitMaskImage:
+          'linear-gradient(to right, black calc(100% - 24px), transparent 100%)',
+      };
+    }
+  }
+
+  return (
+    <div ref={containerRef} className="relative overflow-hidden">
+      {/* 用于测量真实宽度的不可见副本（无 padding） */}
+      <span
+        ref={measureRef}
+        className={`${className} invisible whitespace-nowrap inline-block`}
+        style={{ position: 'absolute', left: 0, top: 0 }}
+      >
+        {text}
+      </span>
+      {/* 实际显示区域 */}
+      <div
+        className={`${className} whitespace-nowrap inline-flex ${shouldAnimate ? 'animate-marquee' : ''}`}
+        style={{ willChange: 'transform', ...maskStyle }}
+      >
+        <span className="pr-8">{text}</span>
+        {shouldAnimate && <span className="pr-8">{text}</span>}
+      </div>
+    </div>
+  );
+}
+
 // ---- Player Bar ----
 function PlayerBar({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
-  const { isPlaying, currentSong, toggle, next, prev } = useMusicStore();
+  const { isPlaying, currentSong, toggle, next, prev, progress } = useMusicStore();
   const { params } = useGlassParams();
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
 
   return (
     <div className="fixed bottom-[88px] md:bottom-4 left-1/2 z-[100] -translate-x-1/2 w-[calc(100%-24px)] md:w-[calc(100%-32px)] max-w-[720px]">
@@ -719,7 +807,6 @@ function PlayerBar({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
           shadowBlur: params.shadowBlur,
           shadowSpread: params.shadowSpread,
           outerShadowBlur: params.outerShadowBlur,
-          tintOpacity: 0.02,
         }}
       >
         {/* 桌面端布局 */}
@@ -729,70 +816,80 @@ function PlayerBar({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
               {/* 播放控制 */}
               <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                 {currentSong && (
-                  <button className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/[0.08] hover:text-white" onClick={() => {}}>
-                    <Shuffle size={16} />
+                  <button className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]" onClick={() => {}}>
+                    <Shuffle size={18} strokeWidth={2.5} />
                   </button>
                 )}
-                <button className="flex h-7 sm:h-9 w-7 sm:w-9 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/[0.08] hover:text-white" onClick={prev}>
-                  <SkipBack size={14} fill="currentColor" />
+                <button className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]" onClick={prev}>
+                  <SkipBack size={20} fill="currentColor" strokeWidth={1} />
                 </button>
                 <button
-                  className="flex h-9 sm:h-11 w-9 sm:w-11 items-center justify-center rounded-full bg-white text-black shadow-lg transition-transform active:scale-[0.95]"
+                  className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white text-black shadow-lg transition-transform active:scale-[0.95]"
                   onClick={toggle}
                 >
-                  {isPlaying ? <Pause size={16} fill="black" /> : <Play size={16} fill="black" className="ml-0.5" />}
+                  {isPlaying ? <Pause size={22} fill="black" /> : <Play size={22} fill="black" className="ml-1" />}
                 </button>
-                <button className="flex h-7 sm:h-9 w-7 sm:w-9 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/[0.08] hover:text-white" onClick={next}>
-                  <SkipForward size={14} fill="currentColor" />
+                <button className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]" onClick={next}>
+                  <SkipForward size={20} fill="currentColor" strokeWidth={1} />
                 </button>
                 {currentSong && (
-                  <button className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/[0.08] hover:text-white" onClick={() => {}}>
-                    <Repeat size={16} />
+                  <button className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]" onClick={() => {}}>
+                    <Repeat size={18} strokeWidth={2.5} />
                   </button>
                 )}
               </div>
 
-              {/* 封面 + 歌曲信息 */}
-              <div className="flex items-center gap-2 sm:gap-3.5 ml-2 sm:ml-6 flex-shrink-0 min-w-0">
-                <div className="h-9 sm:h-12 w-9 sm:w-12 overflow-hidden rounded-lg flex-shrink-0 shadow-md">
-                  <img src={currentSong.cover} alt="cover" className="h-full w-full object-cover" />
-                </div>
-                <div className="overflow-hidden min-w-0">
-                  <div className="truncate text-[12px] sm:text-[14px] font-semibold text-white leading-tight">{currentSong.title}</div>
-                  <div className="truncate text-[10px] sm:text-[12px] text-white/60 leading-tight">{currentSong.artist}</div>
-                </div>
-              </div>
-
-              {/* 进度条 */}
-              <div className="flex-1 min-w-[40px] sm:min-w-[80px] mx-2 sm:mx-6">
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <span className="hidden sm:block text-[11px] text-white/40 font-medium w-[36px]">0:00</span>
-                  <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full w-[35%] bg-white/60 rounded-full"></div>
+              {/* 中间区域：封面 → 右侧控制，进度条横跨此区域底部 */}
+              <div className="relative flex-1 flex items-center gap-2 sm:gap-3.5 ml-2 sm:ml-6 min-w-0 pb-[3px]">
+                {/* 封面 + 歌曲信息 */}
+                <div className="flex items-center gap-2 sm:gap-3.5 flex-shrink-0 min-w-0 max-w-[280px]">
+                  <div className="h-9 sm:h-12 w-9 sm:w-12 overflow-hidden rounded-lg flex-shrink-0 shadow-md">
+                    <img src={currentSong.cover} alt="cover" className="h-full w-full object-cover" />
                   </div>
-                  <span className="hidden sm:block text-[11px] text-white/40 font-medium w-[36px]">3:45</span>
+                  <div className="min-w-0 flex-1">
+                    <MarqueeTitle
+                      text={currentSong.title}
+                      isPlaying={isPlaying}
+                      className="text-[12px] sm:text-[14px] font-semibold text-white leading-tight"
+                    />
+                    <div className="truncate text-[10px] sm:text-[12px] text-white/60 leading-tight mt-0.5">{currentSong.artist} — {currentSong.album}</div>
+                  </div>
                 </div>
-              </div>
 
-              {/* 右侧控制：歌词、试听、更多、列表、音量 */}
-              <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-                <button
-                  className="flex h-7 sm:h-9 w-7 sm:w-9 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/[0.08] hover:text-white"
-                  onClick={onOpenLyrics}
-                  title="歌词"
-                >
-                  <Mic2 size={14} />
-                </button>
-                <span className="hidden sm:block px-2.5 py-1 rounded-full bg-[#fa2d48]/20 text-[11px] text-[#fa2d48] font-semibold">试听</span>
-                <button className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/[0.08] hover:text-white">
-                  <MoreHorizontal size={18} />
-                </button>
-                <button className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/[0.08] hover:text-white">
-                  <ListMusic size={18} />
-                </button>
-                <button className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/[0.08] hover:text-white">
-                  <Volume2 size={18} />
-                </button>
+                {/* 时间显示 */}
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 text-[11px] text-white/40 font-medium ml-auto">
+                  <span>{`${Math.floor(progress * currentSong.duration / 60)}:${String(Math.floor(progress * currentSong.duration) % 60).padStart(2, '0')}`}</span>
+                  <span>/</span>
+                  <span>{`${Math.floor(currentSong.duration / 60)}:${String(Math.floor(currentSong.duration) % 60).padStart(2, '0')}`}</span>
+                </div>
+
+                {/* 右侧控制：歌词、试听、更多、列表、音量 */}
+                <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 ml-2">
+                  <button
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]"
+                    onClick={onOpenLyrics}
+                    title="歌词"
+                  >
+                    <Mic2 size={18} strokeWidth={2} />
+                  </button>
+                  {!isLoggedIn && (
+                    <span className="hidden sm:block px-2.5 py-1 rounded-full bg-[#fa2d48]/20 text-[11px] text-[#fa2d48] font-semibold">试听</span>
+                  )}
+                  <button className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]">
+                    <MoreHorizontal size={18} strokeWidth={2.5} />
+                  </button>
+                  <button className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]">
+                    <ListMusic size={18} strokeWidth={2.5} />
+                  </button>
+                  <button className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]">
+                    <Volume2 size={18} strokeWidth={2.5} />
+                  </button>
+                </div>
+
+                {/* 进度条：从封面到右侧控制区底部 */}
+                <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-[3px] bg-white/8">
+                  <div className="h-full bg-white/55 transition-all duration-100" style={{ width: `${progress * 100}%` }} />
+                </div>
               </div>
             </>
           ) : (
@@ -843,30 +940,39 @@ function PlayerBar({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
         {/* 手机端布局 */}
         <div className="md:hidden flex h-full items-center px-3 min-w-0 gap-2">
           {currentSong && (
-            <div className="h-[40px] w-[40px] overflow-hidden rounded-md flex-shrink-0 shadow-sm">
-              <img src={currentSong.cover} alt="cover" className="h-full w-full object-cover" />
+            <div className="relative flex-1 flex items-center gap-2 min-w-0 pb-[3px]">
+              <div className="h-[40px] w-[40px] overflow-hidden rounded-md flex-shrink-0 shadow-sm">
+                <img src={currentSong.cover} alt="cover" className="h-full w-full object-cover" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <MarqueeTitle
+                  text={currentSong.title}
+                  isPlaying={isPlaying}
+                  className="text-[13px] font-semibold text-white leading-tight"
+                />
+                <div className="truncate text-[11px] text-white/50 leading-tight mt-0.5">{currentSong.artist}</div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-white text-black shadow-md transition-transform active:scale-[0.92]"
+                  onClick={toggle}
+                >
+                  {isPlaying ? <Pause size={20} fill="black" /> : <Play size={20} fill="black" className="ml-0.5" />}
+                </button>
+                <button
+                  className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-white/80 transition-colors active:bg-white/[0.1]"
+                  onClick={next}
+                >
+                  <SkipForward size={20} fill="currentColor" strokeWidth={1} />
+                </button>
+              </div>
+
+              {/* 进度条：从封面到播放按钮底部 */}
+              <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-[3px] bg-white/8">
+                <div className="h-full bg-white/55 transition-all duration-100" style={{ width: `${progress * 100}%` }} />
+              </div>
             </div>
           )}
-          {currentSong && (
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="truncate text-[13px] font-semibold text-white leading-tight">{currentSong.title}</div>
-              <div className="truncate text-[11px] text-white/50 leading-tight">{currentSong.artist}</div>
-            </div>
-          )}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <button
-              className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-white text-black shadow-md transition-transform active:scale-[0.92]"
-              onClick={toggle}
-            >
-              {isPlaying ? <Pause size={16} fill="black" /> : <Play size={16} fill="black" className="ml-0.5" />}
-            </button>
-            <button
-              className="flex h-[32px] w-[32px] items-center justify-center rounded-full text-white/60 transition-colors active:bg-white/[0.1]"
-              onClick={next}
-            >
-              <SkipForward size={16} fill="currentColor" />
-            </button>
-          </div>
         </div>
       </LiquidGlassBox>
     </div>
@@ -876,7 +982,12 @@ function PlayerBar({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
 // ---- Main Page ----
 export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
   const playSong = useMusicStore((s) => s.playSong);
+  const playSongObject = useMusicStore((s) => s.playSongObject);
   const playlist = useMusicStore((s) => s.playlist);
+  const activeTab = useMusicStore((s) => s.activeTab);
+  const setActiveTab = useMusicStore((s) => s.setActiveTab);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const handlePlay = useCallback(
     (index: number) => {
@@ -887,33 +998,94 @@ export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: ()
     [playSong, playlist]
   );
 
+  // 搜索过滤
+  const searchResults = searchQuery.trim()
+    ? playlist.filter(
+        (s) =>
+          s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.album.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : [];
+
+  // 搜索页
+  if (activeTab === 'search') {
+    return (
+      <div className="flex h-screen w-screen bg-[#1a1a1a] text-white overflow-hidden font-sans">
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+
+        <main className="flex-1 overflow-hidden pb-[160px] md:pb-20 animate-page-enter md:ml-[256px]">
+          <div className="relative h-full overflow-y-auto px-4 py-5 pb-[160px] md:px-8 md:py-7 md:pb-12 scrollbar-hide">
+            <h1 className="mb-6 text-[28px] md:text-[34px] font-bold tracking-tight">搜索</h1>
+
+            {/* 搜索输入框 */}
+            <div className="relative mb-6">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="歌曲、艺人、专辑"
+                className="w-full rounded-xl bg-white/[0.08] py-3.5 pl-12 pr-10 text-[15px] text-white placeholder-white/30 outline-none transition-colors focus:bg-white/[0.12]"
+                autoFocus
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white/50 hover:bg-white/20"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* 搜索结果 */}
+            {searchQuery.trim() ? (
+              searchResults.length > 0 ? (
+                <div>
+                  <div className="mb-3 text-[13px] text-white/40">找到 {searchResults.length} 首</div>
+                  <div className="flex flex-col">
+                    {searchResults.map((song) => {
+                      const originalIndex = playlist.indexOf(song);
+                      return (
+                        <SongRow
+                          key={song.id}
+                          song={{ title: song.title, artist: song.artist, album: song.album, cover: song.cover }}
+                          onClick={() => handlePlay(originalIndex)}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-12 text-center">
+                  <div className="text-[15px] text-white/40">未找到"{searchQuery}"的相关结果</div>
+                </div>
+              )
+            ) : (
+              <div className="py-12 text-center">
+                <Search size={48} className="mx-auto mb-4 text-white/10" strokeWidth={1} />
+                <div className="text-[15px] text-white/30">输入关键词搜索歌曲、艺人或专辑</div>
+              </div>
+            )}
+          </div>
+        </main>
+
+        <PlayerBar onOpenLyrics={onOpenLyrics} />
+        <div className="md:hidden">
+          <BottomNav />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen w-screen bg-[#1a1a1a] text-white overflow-hidden font-sans">
-      <Sidebar activeTab="discover" />
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       <main className="flex-1 overflow-hidden pb-[160px] md:pb-20 animate-page-enter md:ml-[256px]">
-        {/* Apple Music 特色顶部渐变背景 */}
-        <div className="absolute top-0 right-0 w-[60%] h-[500px] pointer-events-none" style={{
-          background: 'radial-gradient(ellipse at 70% 0%, rgba(250, 45, 72, 0.12) 0%, rgba(180, 30, 100, 0.06) 30%, transparent 70%)',
-        }} />
-        
         <div className="relative h-full overflow-y-auto px-4 py-5 pb-[160px] md:px-8 md:py-7 md:pb-12 scrollbar-hide">
-          
-          {/* 顶部导航栏 - Apple Music 风格 */}
-          <nav className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="#fa2d48">
-                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.21-1.96 1.07-3.11-1.05.05-2.31.71-3.06 1.64-.68.84-1.27 2.18-1.11 3.29 1.19.09 2.38-.6 3.1-1.82z" />
-              </svg>
-              <span className="text-[20px] font-bold tracking-tight">Music</span>
-            </div>
-            <div className="hidden md:flex items-center gap-6">
-              <a href="#" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">主页</a>
-              <a href="#" className="text-[13px] font-semibold text-[#fa2d48]">新发现</a>
-              <a href="#" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">广播</a>
-              <a href="#" className="text-[13px] font-medium text-white/50 hover:text-white transition-colors">资料库</a>
-            </div>
-          </nav>
 
           {/* 页面标题 - Apple Music 风格 */}
           <h1 className="mb-6 text-[28px] md:text-[34px] font-bold tracking-tight">新发现</h1>
@@ -925,7 +1097,7 @@ export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: ()
               <div className="flex gap-4">
                 {FEATURED.map((item, i) => (
                   <div key={item.title} className={`animate-card-enter animate-stagger-${i + 1}`}>
-                    <FeaturedCard item={item} compact />
+                    <FeaturedCard item={item} compact onPlay={() => handlePlay(i % playlist.length)} />
                   </div>
                 ))}
               </div>
@@ -934,7 +1106,7 @@ export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: ()
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-5">
               {FEATURED.map((item, i) => (
                 <div key={item.title} className={`animate-card-enter animate-stagger-${i + 1}`}>
-                  <FeaturedCard item={item} />
+                  <FeaturedCard item={item} onPlay={() => handlePlay(i % playlist.length)} />
                 </div>
               ))}
             </div>
@@ -946,20 +1118,44 @@ export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: ()
             {/* 手机端：横向滚动 */}
             <div className="md:hidden overflow-x-auto scrollbar-hide -mx-4 px-4">
               <div className="flex gap-3">
-                {NEW_SONGS.map((item, i) => (
-                  <div key={item.title} className={`animate-card-enter animate-stagger-${(i % 6) + 1} flex-shrink-0 w-[140px]`}>
-                    <SmallCard item={{ title: item.title, subtitle: item.artist, cover: item.cover }} onClick={() => handlePlay(0)} compact />
-                  </div>
-                ))}
+                {NEW_SONGS.map((item, i) => {
+                  const matched = playlist.find(s => s.artist === item.artist && s.title === item.title);
+                  const songObj: Song = matched || {
+                    id: 100 + i,
+                    title: item.title,
+                    artist: item.artist,
+                    album: item.title,
+                    cover: item.cover,
+                    audioUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(i % 6) + 1}.mp3`,
+                    duration: 200,
+                  };
+                  return (
+                    <div key={item.title} className={`animate-card-enter animate-stagger-${(i % 6) + 1} flex-shrink-0 w-[140px]`}>
+                      <SmallCard item={{ title: item.title, subtitle: item.artist, cover: item.cover }} onClick={() => playSongObject(songObj)} compact />
+                    </div>
+                  );
+                })}
               </div>
             </div>
             {/* 桌面端：列表风格 */}
             <div className="hidden md:block rounded-xl bg-white/[0.03] p-2">
-              {NEW_SONGS.map((song, i) => (
-                <div key={song.title} className={`animate-card-enter animate-stagger-${(i % 6) + 1}`}>
-                  <NewSongRow song={song} index={i} />
-                </div>
-              ))}
+              {NEW_SONGS.map((song, i) => {
+                const matched = playlist.find(s => s.artist === song.artist && s.title === song.title);
+                const songObj: Song = matched || {
+                  id: 100 + i,
+                  title: song.title,
+                  artist: song.artist,
+                  album: song.title,
+                  cover: song.cover,
+                  audioUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(i % 6) + 1}.mp3`,
+                  duration: 200,
+                };
+                return (
+                  <div key={song.title} className={`animate-card-enter animate-stagger-${(i % 6) + 1}`}>
+                    <NewSongRow song={song} index={i} onPlay={() => playSongObject(songObj)} />
+                  </div>
+                );
+              })}
             </div>
           </section>
 
@@ -1054,7 +1250,7 @@ export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: ()
               <div className="flex gap-4">
                 {RADIO_STATIONS.map((item, i) => (
                   <div key={item.title} className={`animate-card-enter animate-stagger-${i + 1}`}>
-                    <RadioCard item={item} />
+                    <RadioCard item={item} onPlay={() => handlePlay(i % playlist.length)} />
                   </div>
                 ))}
               </div>
@@ -1062,7 +1258,7 @@ export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: ()
             <div className="hidden md:grid grid-cols-3 lg:grid-cols-6 gap-5">
               {RADIO_STATIONS.map((item, i) => (
                 <div key={item.title} className={`animate-card-enter animate-stagger-${i + 1}`}>
-                  <RadioCard item={item} />
+                  <RadioCard item={item} onPlay={() => handlePlay(i % playlist.length)} />
                 </div>
               ))}
             </div>

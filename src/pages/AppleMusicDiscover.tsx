@@ -35,6 +35,7 @@ import { Song } from '@/types';
 import LiquidGlassBox from '@/components/LiquidGlassBox';
 import { useGlassParams } from '@/store/useGlassParams';
 import BottomNav from '@/components/BottomNav';
+import { OLIVIA_ALBUM, SHOUDU_ALBUM, type AlbumData } from '@/pages/AlbumPage';
 
 // ---- Mock Data (Apple Music 风格) ----
 const FEATURED = [
@@ -80,7 +81,7 @@ const NEW_SONGS = [
 
 const NEW_ALBUMS = [
   { title: 'Official FIFA World Cup 2026™ Album', subtitle: 'Various Artists', cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/68/4a/84/684a84c9-f6e3-ca17-d516-ee01a88c32ca/26UMGIM68511.rgb.jpg/632x632bf.webp' },
-  { title: 'eternal sunshine deluxe: brighter days ahead', subtitle: 'Ariana Grande', cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/14/2a/2d/142a2d3e-fb3a-e818-8c7b-6eeb92990084/25UMGIM42095.rgb.jpg/632x632bf.webp' },
+  { title: '首都', subtitle: '罗大佑', cover: import.meta.env.BASE_URL + 'musics/albums/罗大佑/首都_cover.jpg' },
   { title: '4WARD - EP', subtitle: 'MAMAMOO', cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/56/ca/63/56ca63e3-7b54-5953-2d8c-c5bd745e0d93/cover_KM0024723_1.jpg/632x632bf.webp' },
   { title: 'petal', subtitle: 'Ariana Grande', cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/7e/e6/82/7ee682bd-1b17-6adc-be63-b5af1bdff369/26UMGIM51126.rgb.jpg/632x632bf.webp' },
   { title: 'Oh yeah?', subtitle: 'Steve Lacy', cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/1c/b2/46/1cb246db-afae-a599-d377-44a7ea7267fa/196874346976.jpg/632x632bf.webp' },
@@ -418,15 +419,16 @@ function Sidebar({ activeTab, onTabChange }: { activeTab: string; onTabChange: (
 }
 
 // ---- Featured Card (Apple Music 大横幅风格) ----
-function FeaturedCard({ item, compact = false, onPlay }: { item: (typeof FEATURED)[0]; compact?: boolean; onPlay?: () => void }) {
+function FeaturedCard({ item, compact = false, onPlay, onClick }: { item: (typeof FEATURED)[0]; compact?: boolean; onPlay?: () => void; onClick?: () => void }) {
   if (compact) {
     return (
-      <div 
-        className="group relative cursor-pointer overflow-hidden rounded-2xl flex-shrink-0 ring-1 ring-inset ring-white/20" 
-        style={{ 
+      <div
+        className="group relative cursor-pointer overflow-hidden rounded-2xl flex-shrink-0 ring-1 ring-inset ring-white/20"
+        style={{
           aspectRatio: '4/3',
           width: '320px'
         }}
+        onClick={onClick}
       >
         <div
           className="absolute inset-0 bg-cover bg-center transition-[transform,filter] duration-700 group-hover:scale-[1.03]"
@@ -434,7 +436,7 @@ function FeaturedCard({ item, compact = false, onPlay }: { item: (typeof FEATURE
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <button className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-xl transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onPlay?.(); }}>
+          <button className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-xl transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onPlay?.(); onClick?.(); }}>
             <Play size={24} fill="black" className="ml-1" />
           </button>
         </div>
@@ -447,7 +449,7 @@ function FeaturedCard({ item, compact = false, onPlay }: { item: (typeof FEATURE
   }
 
   return (
-    <div className="group cursor-pointer">
+    <div className="group cursor-pointer" onClick={onClick}>
       {/* 顶部文字区：label / title / artist */}
       <div className="mb-3 min-h-[78px]">
         <div className="mb-1.5 text-[12px] sm:text-[13px] font-medium text-white/55">{item.label}</div>
@@ -473,7 +475,7 @@ function FeaturedCard({ item, compact = false, onPlay }: { item: (typeof FEATURE
           }}
         />
         <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <button className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-xl transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onPlay?.(); }}>
+          <button className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm shadow-xl transition-transform active:scale-95" onClick={(e) => { e.stopPropagation(); onPlay?.(); onClick?.(); }}>
             <Play size={24} fill="black" className="ml-1" />
           </button>
         </div>
@@ -777,9 +779,106 @@ function MarqueeTitle({
   );
 }
 
+// ---- Hoverable Progress Bar ----
+function ProgressBar({
+  progress,
+  duration,
+  onSeek,
+}: {
+  progress: number;
+  duration: number;
+  onSeek?: (progress: number) => void;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState(false);
+  const [hoverPct, setHoverPct] = useState(0);
+
+  const updateFromEvent = (clientX: number) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const rect = track.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    setHoverPct(pct);
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const track = trackRef.current;
+    if (!track) return;
+    const rect = track.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    onSeek?.(pct);
+  };
+
+  const fmt = (sec: number) =>
+    `${Math.floor(sec / 60)}:${String(Math.floor(sec) % 60).padStart(2, '0')}`;
+
+  const currentTime = progress * duration;
+  const remaining = duration - currentTime;
+
+  return (
+    <div
+      className="group/prog relative cursor-pointer"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onMouseMove={(e) => updateFromEvent(e.clientX)}
+      onClick={handleClick}
+    >
+      {/* hover 时背景模糊区域 —— 不占空间，absolute 定位 */}
+      <div
+        className={`absolute -left-4 -right-4 -top-14 -bottom-3 rounded-2xl transition-opacity duration-200 pointer-events-none ${
+          hover ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{ backdropFilter: 'blur(24px) saturate(180%)', WebkitBackdropFilter: 'blur(24px) saturate(180%)', backgroundColor: 'rgba(0,0,0,0.35)' }}
+      />
+
+      {/* 左上方：当前播放时间 —— absolute 不占空间 */}
+      <div
+        className={`absolute left-0 bottom-full mb-2 text-[11px] font-medium text-white/80 transition-opacity duration-200 pointer-events-none ${
+          hover ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        {fmt(currentTime)}
+      </div>
+
+      {/* 进度条轨道 —— 始终可见 */}
+      <div
+        ref={trackRef}
+        className={`relative w-full rounded-full transition-all duration-200 ${
+          hover ? 'h-[5px] bg-white/20' : 'h-[2px] bg-white/20'
+        }`}
+      >
+        {/* 进度填充 */}
+        <div
+          className="absolute left-0 top-0 h-full rounded-full transition-all duration-100"
+          style={{
+            width: `${progress * 100}%`,
+            backgroundColor: hover ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)',
+          }}
+        />
+        {/* hover 时白色圆点在已播放末端 */}
+        {hover && (
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-[14px] w-[14px] rounded-full bg-white shadow-lg pointer-events-none transition-transform duration-100"
+            style={{ left: `${progress * 100}%` }}
+          />
+        )}
+      </div>
+
+      {/* 右上方：剩余时间 —— absolute 不占空间 */}
+      <div
+        className={`absolute right-0 bottom-full mb-2 text-[11px] font-medium text-white/80 transition-opacity duration-200 pointer-events-none ${
+          hover ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        -{fmt(remaining)}
+      </div>
+    </div>
+  );
+}
+
 // ---- Player Bar ----
 function PlayerBar({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
-  const { isPlaying, currentSong, toggle, next, prev, progress } = useMusicStore();
+  const { isPlaying, currentSong, toggle, next, prev, progress, seek } = useMusicStore();
   const { params } = useGlassParams();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
 
@@ -839,56 +938,69 @@ function PlayerBar({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
                 )}
               </div>
 
-              {/* 中间区域：封面 → 右侧控制，进度条横跨此区域底部 */}
-              <div className="relative flex-1 flex items-center gap-2 sm:gap-3.5 ml-2 sm:ml-6 min-w-0 pb-[3px]">
-                {/* 封面 + 歌曲信息 */}
-                <div className="flex items-center gap-2 sm:gap-3.5 flex-shrink-0 min-w-0 max-w-[280px]">
-                  <div className="h-9 sm:h-12 w-9 sm:w-12 overflow-hidden rounded-lg flex-shrink-0 shadow-md">
-                    <img src={currentSong.cover} alt="cover" className="h-full w-full object-cover" />
+              {/* 中间区域：封面 → 三个点（含进度条） + 右侧音量控制 */}
+              <div className="flex-1 flex items-stretch ml-2 sm:ml-6 min-w-0 gap-2">
+                {/* 左侧：内容 + 进度条 */}
+                <div className="relative flex-1 flex flex-col min-w-0">
+                  {/* 上方内容行 */}
+                  <div className="flex items-center gap-2 sm:gap-3.5 flex-1 min-w-0">
+                    {/* 封面 */}
+                    <div className="h-8 sm:h-10 w-8 sm:w-10 overflow-hidden rounded-lg flex-shrink-0 shadow-md">
+                      <img src={currentSong.cover} alt="cover" className="h-full w-full object-cover" />
+                    </div>
+                    {/* 歌曲信息 */}
+                    <div className="min-w-0 flex-1 max-w-[200px]">
+                      <MarqueeTitle
+                        text={currentSong.title}
+                        isPlaying={isPlaying}
+                        className="text-[12px] sm:text-[14px] font-semibold text-white leading-tight"
+                      />
+                      <div className="truncate text-[10px] sm:text-[12px] text-white/60 leading-tight mt-0.5">{currentSong.artist} — {currentSong.album}</div>
+                    </div>
+
+                    {/* 时间显示 */}
+                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 text-[11px] text-white/40 font-medium ml-auto">
+                      <span>{`${Math.floor(progress * currentSong.duration / 60)}:${String(Math.floor(progress * currentSong.duration) % 60).padStart(2, '0')}`}</span>
+                      <span>/</span>
+                      <span>{`${Math.floor(currentSong.duration / 60)}:${String(Math.floor(currentSong.duration) % 60).padStart(2, '0')}`}</span>
+                    </div>
+
+                    {/* 歌词、试听、三个点 */}
+                    <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 ml-2">
+                      <button
+                        className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]"
+                        onClick={onOpenLyrics}
+                        title="歌词"
+                      >
+                        <Mic2 size={18} strokeWidth={2} />
+                      </button>
+                      {!isLoggedIn && (
+                        <span className="hidden sm:block px-2.5 py-1 rounded-full bg-[#fa2d48]/20 text-[11px] text-[#fa2d48] font-semibold">试听</span>
+                      )}
+                      <button className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]">
+                        <MoreHorizontal size={18} strokeWidth={2.5} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <MarqueeTitle
-                      text={currentSong.title}
-                      isPlaying={isPlaying}
-                      className="text-[12px] sm:text-[14px] font-semibold text-white leading-tight"
+
+                  {/* 进度条：从封面到三个点底部 */}
+                  <div className="pointer-events-auto mt-0.5">
+                    <ProgressBar
+                      progress={progress}
+                      duration={currentSong.duration}
+                      onSeek={seek}
                     />
-                    <div className="truncate text-[10px] sm:text-[12px] text-white/60 leading-tight mt-0.5">{currentSong.artist} — {currentSong.album}</div>
                   </div>
                 </div>
 
-                {/* 时间显示 */}
-                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 text-[11px] text-white/40 font-medium ml-auto">
-                  <span>{`${Math.floor(progress * currentSong.duration / 60)}:${String(Math.floor(progress * currentSong.duration) % 60).padStart(2, '0')}`}</span>
-                  <span>/</span>
-                  <span>{`${Math.floor(currentSong.duration / 60)}:${String(Math.floor(currentSong.duration) % 60).padStart(2, '0')}`}</span>
-                </div>
-
-                {/* 右侧控制：歌词、试听、更多、列表、音量 */}
-                <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0 ml-2">
-                  <button
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]"
-                    onClick={onOpenLyrics}
-                    title="歌词"
-                  >
-                    <Mic2 size={18} strokeWidth={2} />
-                  </button>
-                  {!isLoggedIn && (
-                    <span className="hidden sm:block px-2.5 py-1 rounded-full bg-[#fa2d48]/20 text-[11px] text-[#fa2d48] font-semibold">试听</span>
-                  )}
-                  <button className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]">
-                    <MoreHorizontal size={18} strokeWidth={2.5} />
-                  </button>
+                {/* 右侧：列表、音量（无进度条） */}
+                <div className="hidden sm:flex items-center gap-0.5 flex-shrink-0 self-center">
                   <button className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]">
                     <ListMusic size={18} strokeWidth={2.5} />
                   </button>
                   <button className="flex h-9 w-9 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/[0.08]">
                     <Volume2 size={18} strokeWidth={2.5} />
                   </button>
-                </div>
-
-                {/* 进度条：从封面到右侧控制区底部 */}
-                <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-[3px] bg-white/8">
-                  <div className="h-full bg-white/55 transition-all duration-100" style={{ width: `${progress * 100}%` }} />
                 </div>
               </div>
             </>
@@ -940,36 +1052,42 @@ function PlayerBar({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
         {/* 手机端布局 */}
         <div className="md:hidden flex h-full items-center px-3 min-w-0 gap-2">
           {currentSong && (
-            <div className="relative flex-1 flex items-center gap-2 min-w-0 pb-[3px]">
-              <div className="h-[40px] w-[40px] overflow-hidden rounded-md flex-shrink-0 shadow-sm">
-                <img src={currentSong.cover} alt="cover" className="h-full w-full object-cover" />
+            <div className="flex-1 flex flex-col min-w-0">
+              {/* 上方内容行 */}
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <div className="h-[36px] w-[36px] overflow-hidden rounded-md flex-shrink-0 shadow-sm">
+                  <img src={currentSong.cover} alt="cover" className="h-full w-full object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <MarqueeTitle
+                    text={currentSong.title}
+                    isPlaying={isPlaying}
+                    className="text-[13px] font-semibold text-white leading-tight"
+                  />
+                  <div className="truncate text-[11px] text-white/50 leading-tight mt-0.5">{currentSong.artist}</div>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-white text-black shadow-md transition-transform active:scale-[0.92]"
+                    onClick={toggle}
+                  >
+                    {isPlaying ? <Pause size={20} fill="black" /> : <Play size={20} fill="black" className="ml-0.5" />}
+                  </button>
+                  <button
+                    className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-white/80 transition-colors active:bg-white/[0.1]"
+                    onClick={next}
+                  >
+                    <SkipForward size={20} fill="currentColor" strokeWidth={1} />
+                  </button>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <MarqueeTitle
-                  text={currentSong.title}
-                  isPlaying={isPlaying}
-                  className="text-[13px] font-semibold text-white leading-tight"
+              {/* 进度条：横跨底部 */}
+              <div className="pointer-events-auto mt-0.5">
+                <ProgressBar
+                  progress={progress}
+                  duration={currentSong.duration}
+                  onSeek={seek}
                 />
-                <div className="truncate text-[11px] text-white/50 leading-tight mt-0.5">{currentSong.artist}</div>
-              </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button
-                  className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-white text-black shadow-md transition-transform active:scale-[0.92]"
-                  onClick={toggle}
-                >
-                  {isPlaying ? <Pause size={20} fill="black" /> : <Play size={20} fill="black" className="ml-0.5" />}
-                </button>
-                <button
-                  className="flex h-[36px] w-[36px] items-center justify-center rounded-full text-white/80 transition-colors active:bg-white/[0.1]"
-                  onClick={next}
-                >
-                  <SkipForward size={20} fill="currentColor" strokeWidth={1} />
-                </button>
-              </div>
-
-              {/* 进度条：从封面到播放按钮底部 */}
-              <div className="pointer-events-none absolute left-0 right-0 bottom-0 h-[3px] bg-white/8">
-                <div className="h-full bg-white/55 transition-all duration-100" style={{ width: `${progress * 100}%` }} />
               </div>
             </div>
           )}
@@ -980,7 +1098,7 @@ function PlayerBar({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
 }
 
 // ---- Main Page ----
-export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: () => void }) {
+export default function AppleMusicDiscover({ onOpenLyrics, onOpenAlbum }: { onOpenLyrics?: () => void; onOpenAlbum?: (album?: AlbumData) => void }) {
   const playSong = useMusicStore((s) => s.playSong);
   const playSongObject = useMusicStore((s) => s.playSongObject);
   const playlist = useMusicStore((s) => s.playlist);
@@ -1097,7 +1215,12 @@ export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: ()
               <div className="flex gap-4">
                 {FEATURED.map((item, i) => (
                   <div key={item.title} className={`animate-card-enter animate-stagger-${i + 1}`}>
-                    <FeaturedCard item={item} compact onPlay={() => handlePlay(i % playlist.length)} />
+                    <FeaturedCard
+                      item={item}
+                      compact
+                      onPlay={() => handlePlay(i % playlist.length)}
+                      onClick={item.artist === 'Olivia Rodrigo' ? () => onOpenAlbum?.() : undefined}
+                    />
                   </div>
                 ))}
               </div>
@@ -1106,7 +1229,11 @@ export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: ()
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-5">
               {FEATURED.map((item, i) => (
                 <div key={item.title} className={`animate-card-enter animate-stagger-${i + 1}`}>
-                  <FeaturedCard item={item} onPlay={() => handlePlay(i % playlist.length)} />
+                  <FeaturedCard
+                    item={item}
+                    onPlay={() => handlePlay(i % playlist.length)}
+                    onClick={item.artist === 'Olivia Rodrigo' ? () => onOpenAlbum?.() : undefined}
+                  />
                 </div>
               ))}
             </div>
@@ -1166,7 +1293,7 @@ export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: ()
               <div className="flex gap-3">
                 {NEW_ALBUMS.map((item, i) => (
                   <div key={item.title} className={`animate-card-enter animate-stagger-${i + 1}`}>
-                    <SmallCard item={item} onClick={() => handlePlay(0)} compact />
+                    <SmallCard item={item} onClick={item.title === '首都' ? () => onOpenAlbum?.(SHOUDU_ALBUM) : () => handlePlay(0)} compact />
                   </div>
                 ))}
               </div>
@@ -1174,7 +1301,7 @@ export default function AppleMusicDiscover({ onOpenLyrics }: { onOpenLyrics?: ()
             <div className="hidden md:grid grid-cols-3 lg:grid-cols-6 gap-5">
               {NEW_ALBUMS.map((item, i) => (
                 <div key={item.title} className={`animate-card-enter animate-stagger-${i + 1}`}>
-                  <SmallCard item={item} onClick={() => handlePlay(0)} />
+                  <SmallCard item={item} onClick={item.title === '首都' ? () => onOpenAlbum?.(SHOUDU_ALBUM) : () => handlePlay(0)} />
                 </div>
               ))}
             </div>

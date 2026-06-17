@@ -2,8 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   主题系统 —— 跟随浏览器 prefers-color-scheme
+   ============================================================ */
 :root {
-  /* Apple Music 风格字体栈 */
+  /* Apple Music 品牌色（双模式通用） */
+  --am-red: #fa2d48;
+  --am-red-hover: #e0263f;
+
+  /* 浅色模式（默认） */
+  color-scheme: light;
+  --am-bg: #ffffff;
+  --am-bg-elev: #f5f5f7;
+  --am-surface: rgba(245, 245, 247, 0.78);
+  --am-surface-light: rgba(0, 0, 0, 0.04);
+  --am-text-primary: #1d1d1f;
+  --am-text-secondary: #6e6e73;
+  --am-text-tertiary: #86868b;
+  --am-border: rgba(0, 0, 0, 0.08);
+  --am-track-hover: rgba(0, 0, 0, 0.04);
+  --am-on-accent: #ffffff;
+
+  /* 液态玻璃 */
+  --lg-tint-color: 0, 0, 0;
+  --lg-tint-opacity: 0.04;
+  --lg-shadow-color: rgba(255, 255, 255, 0.55);
+  --lg-outer-shadow-blur: 24px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --am-bg: #1a1a1a;
+    --am-bg-elev: #232324;
+    --am-surface: rgba(28, 28, 30, 0.78);
+    --am-surface-light: rgba(255, 255, 255, 0.06);
+    --am-text-primary: rgba(255, 255, 255, 1);
+    --am-text-secondary: rgba(255, 255, 255, 0.6);
+    --am-text-tertiary: rgba(255, 255, 255, 0.35);
+    --am-border: rgba(255, 255, 255, 0.08);
+    --am-track-hover: rgba(255, 255, 255, 0.06);
+    --am-on-accent: #000000;
+
+    --lg-tint-color: 255, 255, 255;
+    --lg-tint-opacity: 0.06;
+    --lg-shadow-color: rgba(255, 255, 255, 0.35);
+    --lg-outer-shadow-blur: 32px;
+  }
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--am-bg);
+  color: var(--am-text-primary);
   font-family:
     -apple-system,
     BlinkMacSystemFont,
@@ -22,31 +78,6 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-
-  /* Apple Music 品牌色 */
-  --am-red: #fa2d48;
-  --am-red-hover: #e0263f;
-  --am-bg: #1a1a1a;
-  --am-surface: rgba(35, 35, 36, 0.85);
-  --am-surface-light: rgba(255, 255, 255, 0.06);
-  --am-text-primary: rgba(255, 255, 255, 1);
-  --am-text-secondary: rgba(255, 255, 255, 0.6);
-  --am-text-tertiary: rgba(255, 255, 255, 0.35);
-  --am-border: rgba(255, 255, 255, 0.08);
-
-  /* 液态玻璃 CSS 变量 */
-  --lg-shadow-blur: 20px;
-  --lg-shadow-spread: -5px;
-  --lg-shadow-color: rgba(255, 255, 255, 0.45);
-  --lg-tint-color: 255, 255, 255;
-  --lg-tint-opacity: 0.06;
-  --lg-outer-shadow-blur: 24px;
-}
-
-html, body, #root {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
 }
 
 /* 隐藏滚动条 */

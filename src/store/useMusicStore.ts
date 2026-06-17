@@ -37,6 +37,7 @@ interface MusicState {
   setActiveTab: (tab: TabType) => void;
   addSongsToPlaylist: (songs: Song[]) => void;
   setProgress: (progress: number) => void;
+  seek: (progress: number) => void;
   initAudio: () => void;
   
   // 用户歌单管理
@@ -96,6 +97,9 @@ export const useMusicStore = create<MusicState>((set, get) => ({
   userPlaylists: [],
   currentUsername: null,
 
+  // 专辑详情
+  currentAlbum: null,
+
   initAudio: () => {
     const audio = new Audio();
     audio.addEventListener('ended', () => {
@@ -142,6 +146,20 @@ export const useMusicStore = create<MusicState>((set, get) => ({
       get().pause();
     } else {
       get().play();
+    }
+  },
+
+  seek: (progress: number) => {
+    const { audioRef, currentSong, isPlaying } = get();
+    if (!audioRef || !currentSong) return;
+    const clamped = Math.max(0, Math.min(1, progress));
+    const target = clamped * (audioRef.duration || currentSong.duration);
+    if (Number.isFinite(target)) {
+      audioRef.currentTime = target;
+    }
+    set({ progress: clamped });
+    if (isPlaying) {
+      audioRef.play().catch(() => {});
     }
   },
 

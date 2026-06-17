@@ -6,6 +6,8 @@ export interface Song {
   cover: string;
   audioUrl: string;
   duration: number;
+  lyricsUrl?: string;
+  lyricsSrtUrl?: string;
 }
 
 export type TabType = 'home' | 'discover' | 'radio' | 'library' | 'search';

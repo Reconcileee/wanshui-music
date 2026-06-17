@@ -12,67 +12,88 @@ import {
   VolumeX,
 } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
-
-interface LyricLine {
-  time: number;
-  text: string;
-}
+import { parseLRC, parseSRT, findCurrentLineIndex, type LyricLine } from '@/utils/lyricsParser';
 
 interface LyricsPageProps {
-  lyrics?: LyricLine[];
   onClose?: () => void;
 }
 
-const SAMPLE_LYRICS: LyricLine[] = [
-  { time: 0, text: '之后他就恢复了自证这个解释' },
-  { time: 4, text: '词汇' },
-  { time: 8, text: '因为这才是挥手向云彩道别的滋味' },
-  { time: 14, text: '小船静静往返' },
-  { time: 18, text: '马谛斯的海岸' },
-  { time: 22, text: '星空下的夜晚' },
-  { time: 26, text: '交给梵谷点燃' },
-  { time: 30, text: '梦美的太短暂' },
-  { time: 34, text: '孟克桥上的呐喊' },
+const FALLBACK_LYRICS: LyricLine[] = [
+  { time: 0, text: '暂无歌词' },
 ];
 
-export default function LyricsPage({ lyrics = SAMPLE_LYRICS, onClose }: LyricsPageProps) {
-  const { isPlaying, currentSong, toggle, next, prev } = useMusicStore();
+export default function LyricsPage({ onClose }: LyricsPageProps) {
+  const { isPlaying, currentSong, toggle, next, prev, audioRef, progress } = useMusicStore();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [lyrics, setLyrics] = useState<LyricLine[]>(FALLBACK_LYRICS);
   const [currentTime, setCurrentTime] = useState(0);
-  const [currentLineIndex, setCurrentLineIndex] = useState(3);
+  const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [volume, setVolume] = useState(0.6);
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [favorited, setFavorited] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [loadingLyrics, setLoadingLyrics] = useState(false);
 
+  // 根据当前歌曲加载歌词文件
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!currentSong) {
+      setLyrics(FALLBACK_LYRICS);
+      setCurrentLineIndex(0);
+      return;
+    }
 
-    const interval = setInterval(() => {
-      setCurrentTime(prev => {
-        const newTime = prev + 0.1;
-        const newIndex = lyrics.findIndex((line, index) => {
-          const nextLine = lyrics[index + 1];
-          if (!nextLine) return true;
-          return newTime >= line.time && newTime < nextLine.time;
-        });
+    const lyricsUrl = currentSong.lyricsUrl;
+    const srtUrl = currentSong.lyricsSrtUrl;
 
-        if (newIndex !== -1 && newIndex !== currentLineIndex) {
-          setCurrentLineIndex(newIndex);
-        }
+    if (!lyricsUrl && !srtUrl) {
+      setLyrics(FALLBACK_LYRICS);
+      setCurrentLineIndex(0);
+      return;
+    }
 
-        if (newTime > (lyrics[lyrics.length - 1]?.time + 10 || 220)) {
-          return 0;
-        }
+    setLoadingLyrics(true);
+    const url = lyricsUrl || srtUrl!;
+    const isSrt = !lyricsUrl && !!srtUrl;
 
-        return newTime;
+    fetch(url)
+      .then(resp => {
+        if (!resp.ok) throw new Error('Failed to load lyrics');
+        return resp.text();
+      })
+      .then(text => {
+        const parsed = isSrt ? parseSRT(text) : parseLRC(text);
+        setLyrics(parsed.length > 0 ? parsed : FALLBACK_LYRICS);
+        setCurrentLineIndex(0);
+      })
+      .catch(() => {
+        setLyrics(FALLBACK_LYRICS);
+        setCurrentLineIndex(0);
+      })
+      .finally(() => setLoadingLyrics(false));
+  }, [currentSong]);
+
+  // 从真实 audioRef 读取当前播放时间，同步歌词
+  useEffect(() => {
+    if (!audioRef) return;
+
+    const updateTime = () => {
+      setCurrentTime(audioRef.currentTime);
+      setCurrentLineIndex(prev => {
+        const newIndex = findCurrentLineIndex(lyrics, audioRef.currentTime);
+        return newIndex !== -1 ? newIndex : prev;
       });
-    }, 100);
+    };
 
-    return () => clearInterval(interval);
-  }, [isPlaying, lyrics, currentLineIndex]);
+    audioRef.addEventListener('timeupdate', updateTime);
+    updateTime();
 
+    return () => {
+      audioRef.removeEventListener('timeupdate', updateTime);
+    };
+  }, [audioRef, lyrics]);
+
+  // 歌词行变化时自动滚动
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -93,9 +114,9 @@ export default function LyricsPage({ lyrics = SAMPLE_LYRICS, onClose }: LyricsPa
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const totalTime = 224; // 3:44
-  const songTitle = currentSong?.title || '最伟大的作品';
-  const songArtist = currentSong?.artist || '周杰伦';
+  const totalTime = currentSong?.duration || (audioRef?.duration && !isNaN(audioRef.duration) ? audioRef.duration : 0);
+  const songTitle = currentSong?.title || '未在播放';
+  const songArtist = currentSong?.artist || '';
   const songCover = currentSong?.cover || '';
 
   return (

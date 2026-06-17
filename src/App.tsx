@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { GlassParamsProvider } from '@/store/useGlassParams';
 import AppleMusicDiscover from '@/pages/AppleMusicDiscover';
 import LyricsPage from '@/pages/LyricsPage';
+import AlbumPage, { OLIVIA_ALBUM, type AlbumData } from '@/pages/AlbumPage';
 import LoginModal from '@/components/LoginModal';
 import { loadLocalSongs } from '@/utils/mockData';
 
@@ -13,6 +14,8 @@ function AppInner() {
   const clearUserPlaylists = useMusicStore((s) => s.clearUserPlaylists);
   const addSongsToPlaylist = useMusicStore((s) => s.addSongsToPlaylist);
   const [showLyrics, setShowLyrics] = useState(false);
+  const [showAlbum, setShowAlbum] = useState(false);
+  const [albumData, setAlbumData] = useState<AlbumData | null>(null);
   const showLoginModal = useAuthStore((s) => s.showLoginModal);
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const username = useAuthStore((s) => s.username);
@@ -39,7 +42,19 @@ function AppInner() {
 
   return (
     <>
-      <AppleMusicDiscover onOpenLyrics={() => setShowLyrics(true)} />
+      <AppleMusicDiscover
+        onOpenLyrics={() => setShowLyrics(true)}
+        onOpenAlbum={(album?: AlbumData) => {
+          setAlbumData(album || OLIVIA_ALBUM);
+          setShowAlbum(true);
+        }}
+      />
+      {showAlbum && (
+        <AlbumPage
+          album={albumData || undefined}
+          onClose={() => setShowAlbum(false)}
+        />
+      )}
       {showLyrics && <LyricsPage onClose={() => setShowLyrics(false)} />}
       {showLoginModal && <LoginModal />}
     </>

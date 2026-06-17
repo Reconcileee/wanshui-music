@@ -90,6 +90,8 @@ export async function loadLocalSongs(): Promise<Song[]> {
       cover: entry.cover.startsWith('http') ? entry.cover : base + entry.cover,
       audioUrl: entry.audioUrl.startsWith('http') ? entry.audioUrl : base + entry.audioUrl,
       duration: entry.duration,
+      lyricsUrl: entry.lyricsUrl ? (entry.lyricsUrl.startsWith('http') ? entry.lyricsUrl : base + entry.lyricsUrl) : undefined,
+      lyricsSrtUrl: entry.lyricsSrtUrl ? (entry.lyricsSrtUrl.startsWith('http') ? entry.lyricsSrtUrl : base + entry.lyricsSrtUrl) : undefined,
     }));
   } catch {
     return [];

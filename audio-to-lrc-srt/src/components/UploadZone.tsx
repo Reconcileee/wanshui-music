@@ -10,7 +10,8 @@ export interface AudioFileInfo {
   name: string;
   size: string;
   duration: number;
-  audioData: Float32Array;
+  audioData: Float32Array;   // 16kHz 单声道，供 Whisper 使用
+  audioBuffer: AudioBuffer;  // 原始 AudioBuffer，供 Azure 使用
 }
 
 interface UploadZoneProps {
@@ -32,6 +33,30 @@ function formatDuration(seconds: number): string {
   const s = Math.floor(seconds % 60);
   if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+/**
+ * 将 AudioBuffer 重采样到 16kHz 单声道 Float32Array
+ */
+function resampleTo16kMono(audioBuffer: AudioBuffer): Float32Array {
+  const channelData = audioBuffer.getChannelData(0);
+  if (audioBuffer.sampleRate === 16000) {
+    return new Float32Array(channelData);
+  }
+  const ratio = audioBuffer.sampleRate / 16000;
+  const newLength = Math.round(channelData.length / ratio);
+  const resampled = new Float32Array(newLength);
+  for (let i = 0; i < newLength; i++) {
+    const srcIdx = i * ratio;
+    const idx = Math.floor(srcIdx);
+    const frac = srcIdx - idx;
+    if (idx + 1 < channelData.length) {
+      resampled[i] = channelData[idx] * (1 - frac) + channelData[idx + 1] * frac;
+    } else {
+      resampled[i] = channelData[idx] || 0;
+    }
+  }
+  return resampled;
 }
 
 export default function UploadZone({ onFileLoaded, currentFile, onRemoveFile, disabled }: UploadZoneProps) {
@@ -59,7 +84,9 @@ export default function UploadZone({ onFileLoaded, currentFile, onRemoveFile, di
     setIsLoading(true);
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const audioContext = new AudioContext({ sampleRate: 16000 });
+
+      // 使用默认采样率解码（兼容所有浏览器），然后手动重采样
+      const audioContext = new AudioContext();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       const duration = audioBuffer.duration;
 
@@ -70,9 +97,8 @@ export default function UploadZone({ onFileLoaded, currentFile, onRemoveFile, di
         return;
       }
 
-      // 转为单声道 Float32Array
-      const channelData = audioBuffer.getChannelData(0);
-      const audioData = new Float32Array(channelData);
+      // 重采样到 16kHz 单声道
+      const audioData = resampleTo16kMono(audioBuffer);
 
       audioContext.close();
 
@@ -82,6 +108,7 @@ export default function UploadZone({ onFileLoaded, currentFile, onRemoveFile, di
         size: formatFileSize(file.size),
         duration,
         audioData,
+        audioBuffer,
       });
     } catch (err) {
       setError('无法解码音频文件，请检查文件是否损坏');

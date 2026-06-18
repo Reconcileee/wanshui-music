@@ -26,8 +26,67 @@ const LANGUAGE_MAP: Record<string, string> = {
   'es-MX': 'es-MX',
 };
 
+/**
+ * 将 AudioBuffer 编码为 WAV 格式的 ArrayBuffer
+ */
+function audioBufferToWav(audioBuffer: AudioBuffer): ArrayBuffer {
+  const numChannels = 1; // 单声道
+  const sampleRate = 16000;
+  const channelData = audioBuffer.getChannelData(0);
+  // 重采样到 16kHz
+  const ratio = audioBuffer.sampleRate / sampleRate;
+  const newLength = Math.round(channelData.length / ratio);
+  const resampled = new Float32Array(newLength);
+  for (let i = 0; i < newLength; i++) {
+    const srcIdx = i * ratio;
+    const idx = Math.floor(srcIdx);
+    const frac = srcIdx - idx;
+    if (idx + 1 < channelData.length) {
+      resampled[i] = channelData[idx] * (1 - frac) + channelData[idx + 1] * frac;
+    } else {
+      resampled[i] = channelData[idx] || 0;
+    }
+  }
+
+  const bytesPerSample = 2; // 16-bit
+  const blockAlign = numChannels * bytesPerSample;
+  const byteRate = sampleRate * blockAlign;
+  const dataSize = newLength * bytesPerSample;
+  const bufferSize = 44 + dataSize;
+  const buffer = new ArrayBuffer(bufferSize);
+  const view = new DataView(buffer);
+
+  // WAV 文件头
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  };
+  writeString(0, 'RIFF');
+  view.setUint32(4, bufferSize - 8, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true); // PCM
+  view.setUint16(20, 1, true); // PCM format
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bytesPerSample * 8, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  // 写入 PCM 数据
+  let offset = 44;
+  for (let i = 0; i < newLength; i++) {
+    const s = Math.max(-1, Math.min(1, resampled[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+    offset += 2;
+  }
+
+  return buffer;
+}
+
 export async function transcribeWithAzure(
-  audioFile: File,
+  audioBuffer: AudioBuffer,
   options: AzureOptions
 ): Promise<TimestampedSegment[]> {
   const lang = LANGUAGE_MAP[options.language || 'auto'] || 'zh-CN';
@@ -39,14 +98,21 @@ export async function transcribeWithAzure(
   speechConfig.speechRecognitionLanguage = lang;
   speechConfig.outputFormat = SpeechSDK.OutputFormat.Detailed;
 
-  // 从文件创建音频配置
-  const audioConfig = SpeechSDK.AudioConfig.fromWavFileInput(audioFile as any);
+  // 将 AudioBuffer 转为 WAV 格式
+  const wavBuffer = audioBufferToWav(audioBuffer);
 
+  // 使用 PushAudioInputStream 支持所有音频格式
+  const audioFormat = SpeechSDK.AudioStreamFormat.getWaveFormatPCM(16000, 16, 1);
+  const pushStream = SpeechSDK.AudioInputStream.createPushStream(audioFormat);
+  pushStream.write(wavBuffer);
+  pushStream.close();
+
+  const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(pushStream);
   const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
 
   return new Promise<TimestampedSegment[]>((resolve, reject) => {
     const segments: TimestampedSegment[] = [];
-    let offsetAccumulator = 0;
+    let currentTime = 0;
 
     recognizer.recognizing = (_s, e) => {
       options.onPartialResult?.(e.result.text);
@@ -54,15 +120,13 @@ export async function transcribeWithAzure(
 
     recognizer.recognized = (_s, e) => {
       if (e.result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
-        const detail = e.result as any;
-        const offset = (detail.offset / 10000); // ticks to seconds
-        const duration = (detail.duration / 10000);
+        const duration = (e.result.duration / 10000); // ticks to seconds
         segments.push({
           text: e.result.text,
-          start: offsetAccumulator,
-          end: offsetAccumulator + duration,
+          start: currentTime,
+          end: currentTime + duration,
         });
-        offsetAccumulator += duration;
+        currentTime += duration;
         options.onProgress?.(Math.min(0.9, segments.length * 0.05));
       }
     };

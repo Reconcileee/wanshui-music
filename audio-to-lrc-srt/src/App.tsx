@@ -29,7 +29,7 @@ export default function App() {
       transcriber.startLocal(audioFile.audioData, config.whisperModel, config.language);
     } else {
       if (!config.azureKey || !config.azureRegion) return;
-      transcriber.startAzure(audioFile.file, config.azureKey, config.azureRegion, config.language);
+      transcriber.startAzure(audioFile.audioBuffer, config.azureKey, config.azureRegion, config.language);
     }
   }, [audioFile, config, transcriber]);
 

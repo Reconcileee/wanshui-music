@@ -1,8 +1,16 @@
 import { pipeline } from '@huggingface/transformers';
-import type { TimestampedSegment } from './format';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let transcriber: any = null;
+
+const MODEL_MAP: Record<string, string> = {
+  tiny: 'onnx-community/whisper-tiny',
+  base: 'onnx-community/whisper-base',
+  small: 'onnx-community/whisper-small',
+};
+
+// 缓存已加载的模型 ID，切换模型时重新加载
+let loadedModelId: string | null = null;
 
 export interface WhisperOptions {
   model: 'tiny' | 'base' | 'small';
@@ -10,29 +18,51 @@ export interface WhisperOptions {
   onProgress?: (progress: number) => void;
 }
 
-const MODEL_MAP = {
-  tiny: 'onnx-community/whisper-tiny',
-  base: 'onnx-community/whisper-base',
-  small: 'onnx-community/whisper-small',
-};
-
 export async function transcribeWithWhisper(
   audioData: Float32Array,
   options: WhisperOptions
-): Promise<TimestampedSegment[]> {
+): Promise<{ chunks: Array<{ text: string; timestamp: [number, number | null] }> }> {
   const modelId = MODEL_MAP[options.model];
+
+  // 模型切换时重置
+  if (loadedModelId && loadedModelId !== modelId) {
+    transcriber = null;
+    loadedModelId = null;
+  }
 
   // 加载模型
   if (!transcriber) {
     options.onProgress?.(0);
-    transcriber = await pipeline('automatic-speech-recognition', modelId, {
-      dtype: 'q4',
-      progress_callback: (p: { status: string; progress?: number }) => {
-        if (p.status === 'progress' && p.progress !== undefined) {
-          options.onProgress?.(p.progress / 100 * 0.3); // 模型加载占 30%
-        }
-      },
-    });
+    try {
+      transcriber = await pipeline('automatic-speech-recognition', modelId, {
+        dtype: {
+          encoder_model: 'fp32',
+          decoder_model_merged: 'q4',
+        },
+        device: 'wasm',
+        progress_callback: (p: { status: string; progress?: number; file?: string }) => {
+          if (p.status === 'progress' && p.progress !== undefined) {
+            options.onProgress?.(p.progress / 100 * 0.3);
+          } else if (p.status === 'done') {
+            // 单个文件下载完成
+          }
+        },
+      });
+      loadedModelId = modelId;
+    } catch (err) {
+      // 如果 q4 失败，回退到 fp32
+      console.warn('q4 量化加载失败，回退到 fp32:', err);
+      transcriber = await pipeline('automatic-speech-recognition', modelId, {
+        dtype: 'fp32',
+        device: 'wasm',
+        progress_callback: (p: { status: string; progress?: number }) => {
+          if (p.status === 'progress' && p.progress !== undefined) {
+            options.onProgress?.(p.progress / 100 * 0.3);
+          }
+        },
+      });
+      loadedModelId = modelId;
+    }
   }
 
   options.onProgress?.(0.35);
@@ -45,23 +75,21 @@ export async function transcribeWithWhisper(
 
   options.onProgress?.(0.9);
 
-  const chunks = (result as { chunks?: Array<{ text: string; timestamp: [number, number] }> }).chunks;
-  if (!chunks) {
-    // fallback: 无时间戳分段
+  // 处理结果
+  const chunks = (result as { chunks?: Array<{ text: string; timestamp: [number, number | null] }> }).chunks;
+  if (!chunks || chunks.length === 0) {
     const text = (result as { text: string }).text;
-    return [{ text, start: 0, end: 0 }];
+    if (text) {
+      return { chunks: [{ text, timestamp: [0, null] }] };
+    }
+    throw new Error('识别结果为空，请检查音频是否包含语音内容');
   }
 
-  const segments: TimestampedSegment[] = chunks.map((chunk) => ({
-    text: chunk.text,
-    start: chunk.timestamp[0] ?? 0,
-    end: chunk.timestamp[1] ?? chunk.timestamp[0] ?? 0,
-  }));
-
   options.onProgress?.(1);
-  return segments;
+  return { chunks };
 }
 
 export function resetWhisperModel(): void {
   transcriber = null;
+  loadedModelId = null;
 }

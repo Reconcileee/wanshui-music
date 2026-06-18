@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { useMusicStore } from '@/store/useMusicStore';
 import { Song } from '@/types';
+import Sidebar from '@/components/Sidebar';
+import { useAlbumSync } from '@/hooks/useAlbumSync';
 
 // ---- Album Data ----
 export interface AlbumTrack {
@@ -19,6 +21,7 @@ export interface AlbumTrack {
   feat?: string;
   popular?: boolean;
   explicit?: boolean;
+  playable?: boolean;
 }
 
 export interface AlbumData {
@@ -104,23 +107,26 @@ export const SHOUDU_ALBUM: AlbumData = {
   genre: '华语流行',
   year: '1992年',
   releaseDate: '1992年',
-  trackCount: 10,
-  totalDuration: '46 分钟',
+  trackCount: 13,
+  totalDuration: '52 分钟',
   label: '℗ 1992 滚石唱片',
   cover: import.meta.env.BASE_URL + 'musics/albums/罗大佑/首都_cover.jpg',
   description:
     '《首都》是罗大佑"中国三部曲"的终章，与《皇后大道东》《原乡》共同构成他对家国命运的深沉思考。从香港前途的追问，到台湾根源的探索，再到对祖国大陆变动的审视，罗大佑以史诗般的笔触铺陈民族命运的宏大叙事。同名曲《首都》以粤语吟唱，将千年帝都的兴衰更迭浓缩于方寸之间——"首都万里河山千代人物，首都万世乾坤青云路"，既有对历史的回望，也有对现实的叩问。整张专辑融合摇滚、民谣与中式曲调，在批判与抒情之间游刃有余，是华语音乐中罕见的兼具思想深度与艺术高度的作品。',
   tracks: [
-    { id: 1, title: '首都', duration: '5:31', durationSec: 331, popular: true },
-    { id: 2, title: '长路漫漫伴你闯', duration: '4:18', durationSec: 258, popular: true },
-    { id: 3, title: '恋曲2000', duration: '5:42', durationSec: 342, popular: true },
-    { id: 4, title: '东风', duration: '3:56', durationSec: 236 },
-    { id: 5, title: '台北红玫瑰', duration: '4:12', durationSec: 252 },
-    { id: 6, title: '大地的孩子', duration: '4:35', durationSec: 275 },
-    { id: 7, title: '天雨', duration: '3:48', durationSec: 228 },
-    { id: 8, title: '母亲', duration: '4:22', durationSec: 262 },
-    { id: 9, title: '飞车', duration: '3:15', durationSec: 195 },
-    { id: 10, title: '京城夜', duration: '6:03', durationSec: 363 },
+    { id: 1, title: '飛車', duration: '3:15', durationSec: 195 },
+    { id: 2, title: '首都', duration: '5:31', durationSec: 331, playable: true },
+    { id: 3, title: '母親ⅰ', duration: '2:48', durationSec: 168 },
+    { id: 4, title: '情人眼里', duration: '4:12', durationSec: 252 },
+    { id: 5, title: '親親表哥', duration: '3:56', durationSec: 236 },
+    { id: 6, title: '母親ⅱ', duration: '3:22', durationSec: 202 },
+    { id: 7, title: '新聞報導', duration: '1:30', durationSec: 90 },
+    { id: 8, title: '首都', duration: '5:31', durationSec: 331 },
+    { id: 9, title: '不在乎', duration: '3:48', durationSec: 228 },
+    { id: 10, title: '愛色', duration: '4:05', durationSec: 245 },
+    { id: 11, title: '只要是愛', duration: '3:40', durationSec: 220 },
+    { id: 12, title: '首都', duration: '5:31', durationSec: 331 },
+    { id: 13, title: '新生代', duration: '4:18', durationSec: 258 },
   ],
   moreFromArtist: [
     { title: '之乎者也', subtitle: '罗大佑 · 1982', cover: 'https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/a4/fa/86/a4fa86d6-c23a-c37f-1251-00376ff144cd/00602498378830.rgb.jpg/300x300bb.webp' },
@@ -218,25 +224,36 @@ interface AlbumPageProps {
 }
 
 export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPageProps) {
+  const { getAlbumData } = useAlbumSync();
+  const syncedAlbum = getAlbumData(album.title);
+  const effectiveAlbum = syncedAlbum ?? album;
+
   const { isPlaying, currentSong, playSongObject } = useMusicStore();
   const [descExpanded, setDescExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState('discover');
 
   const handlePlayTrack = (track: AlbumTrack) => {
+    if (track.playable === false) return;
+    // 首都专辑的"首都"曲目使用本地音频
+    const isShouduTrack = effectiveAlbum.artist === '罗大佑' && track.title === '首都' && track.playable;
     const song: Song = {
       id: track.id + 5000,
       title: track.title,
-      artist: track.feat ? `${album.artist} & ${track.feat}` : album.artist,
-      album: album.title,
-      cover: album.cover,
-      audioUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(track.id % 6) + 1}.mp3`,
+      artist: track.feat ? `${effectiveAlbum.artist} & ${track.feat}` : effectiveAlbum.artist,
+      album: effectiveAlbum.title,
+      cover: effectiveAlbum.cover,
+      audioUrl: isShouduTrack
+        ? import.meta.env.BASE_URL + 'musics/首都/罗大佑 - 首都.mp3'
+        : `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(track.id % 6) + 1}.mp3`,
       duration: track.durationSec,
     };
     playSongObject(song);
   };
 
   const handlePlayAll = () => {
-    if (album.tracks.length > 0) {
-      handlePlayTrack(album.tracks[0]);
+    const firstPlayable = effectiveAlbum.tracks.find(t => t.playable !== false);
+    if (firstPlayable) {
+      handlePlayTrack(firstPlayable);
     }
   };
 
@@ -246,11 +263,11 @@ export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPagePr
 
   return (
     <div className="fixed inset-0 z-[200] flex h-screen w-screen bg-[#1f1f1f] text-white overflow-hidden font-sans">
-      {/* Sidebar spacer - matches discover page sidebar width */}
-      <div className="hidden md:block" style={{ width: '256px', flexShrink: 0 }} />
+      {/* Sidebar */}
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Main content */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden md:ml-[260px]">
         <div className="relative h-full overflow-y-auto scrollbar-hide">
           {/* Back button */}
           <div className="sticky top-0 z-10 flex items-center px-6 py-4 md:px-8 bg-[#1f1f1f]/80 backdrop-blur-md">
@@ -273,8 +290,8 @@ export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPagePr
                   style={{ width: '270px', height: '270px', borderRadius: 0 }}
                 >
                   <img
-                    src={album.cover}
-                    alt={album.title}
+                    src={effectiveAlbum.cover}
+                    alt={effectiveAlbum.title}
                     className="h-full w-full object-cover"
                   />
                 </div>
@@ -282,22 +299,22 @@ export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPagePr
 
               {/* Headings + Description + Actions */}
               <div className="flex flex-col min-w-0 flex-1">
-                {/* Metadata top (genre · year) */}
-                <div className="mb-1 text-[12px] font-semibold text-white/60">
-                  {album.genre} · {album.year}
-                </div>
-
                 {/* Title with inline E badge */}
                 <h1 className="mb-0.5 text-[26px] font-bold leading-[30px] text-white/90 tracking-tight">
-                  {album.title}
+                  {effectiveAlbum.title}
                   <ExplicitBadge />
                 </h1>
 
                 {/* Artist link - pink, 26px, font-weight 400 */}
-                <div className="mb-3">
+                <div className="mb-1">
                   <a className="text-[26px] font-normal text-[#fa586a] hover:underline cursor-pointer">
-                    {album.artist}
+                    {effectiveAlbum.artist}
                   </a>
+                </div>
+
+                {/* Metadata (genre · year) below artist */}
+                <div className="mb-3 text-[12px] font-semibold text-white/60">
+                  {effectiveAlbum.genre} · {effectiveAlbum.year}
                 </div>
 
                 {/* Description - 3 lines truncated with 更多 button */}
@@ -311,7 +328,7 @@ export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPagePr
                       overflow: descExpanded ? 'visible' : 'hidden',
                     }}
                   >
-                    {album.description}
+                    {effectiveAlbum.description}
                     {!descExpanded && (
                       <button
                         onClick={() => setDescExpanded(true)}
@@ -373,16 +390,19 @@ export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPagePr
             </div>
 
             {/* Tracks */}
-            {album.tracks.map((track) => {
+            {effectiveAlbum.tracks.map((track) => {
               const playing = isTrackPlaying(track);
+              const canPlay = track.playable !== false;
               return (
                 <div
                   key={track.id}
-                  className={`group flex items-center transition-colors hover:bg-white/[0.06] cursor-pointer ${
+                  className={`group flex items-center transition-colors ${
+                    canPlay ? 'hover:bg-white/[0.06] cursor-pointer' : 'cursor-default'
+                  } ${
                     playing ? 'bg-white/[0.04]' : ''
                   }`}
                   style={{ height: '46px' }}
-                  onClick={() => handlePlayTrack(track)}
+                  onClick={() => canPlay && handlePlayTrack(track)}
                 >
                   {/* Column 1: Popular dot / track number / play button */}
                   <div className="w-8 flex items-center justify-center flex-shrink-0">
@@ -397,20 +417,22 @@ export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPagePr
                     {!track.popular && (
                       <span
                         className={`text-[13px] font-normal group-hover:hidden ${
-                          playing ? 'text-[#fa586a]' : 'text-white/60'
+                          playing ? 'text-[#fa586a]' : canPlay ? 'text-white/60' : 'text-white/25'
                         }`}
                       >
                         {track.id}
                       </span>
                     )}
                     {/* Play button - shown on hover */}
-                    <button className="hidden group-hover:flex items-center justify-center text-white/80">
-                      {playing ? (
-                        <Pause size={14} fill="currentColor" />
-                      ) : (
-                        <Play size={14} fill="currentColor" className="ml-0.5" />
-                      )}
-                    </button>
+                    {canPlay && (
+                      <button className="hidden group-hover:flex items-center justify-center text-white/80">
+                        {playing ? (
+                          <Pause size={14} fill="currentColor" />
+                        ) : (
+                          <Play size={14} fill="currentColor" className="ml-0.5" />
+                        )}
+                      </button>
+                    )}
                   </div>
 
                   {/* Column 2: Song title */}
@@ -418,7 +440,7 @@ export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPagePr
                     <div className="min-w-0">
                       <div
                         className={`flex items-center gap-1 truncate text-[13px] font-normal ${
-                          playing ? 'text-[#fa586a]' : 'text-white/90'
+                          playing ? 'text-[#fa586a]' : canPlay ? 'text-white/90' : 'text-white/25'
                         }`}
                       >
                         <span className="truncate">{track.title}</span>
@@ -426,7 +448,7 @@ export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPagePr
                       </div>
                       {track.feat && (
                         <div className="truncate text-[12px] text-white/40">
-                          {album.artist} & {track.feat}
+                          {effectiveAlbum.artist} & {track.feat}
                         </div>
                       )}
                     </div>
@@ -435,28 +457,32 @@ export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPagePr
                   {/* Column 3: 试听 text button + duration + more */}
                   <div className="flex items-center justify-end flex-shrink-0" style={{ width: '141px', paddingRight: '18px' }}>
                     {/* 试听 text button - pink, 10px */}
-                    <button
-                      className="text-[10px] font-medium text-[#fa586a] hover:underline mr-3"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePlayTrack(track);
-                      }}
-                    >
-                      试听
-                    </button>
+                    {canPlay && (
+                      <button
+                        className="text-[10px] font-medium text-[#fa586a] hover:underline mr-3"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePlayTrack(track);
+                        }}
+                      >
+                        试听
+                      </button>
+                    )}
 
                     {/* Duration */}
-                    <span className="text-[13px] font-normal text-white/60 mr-2">
+                    <span className={`text-[13px] font-normal mr-2 ${canPlay ? 'text-white/60' : 'text-white/25'}`}>
                       {track.duration}
                     </span>
 
                     {/* More button */}
-                    <button
-                      className="flex w-6 items-center justify-center text-white/20 opacity-0 transition-all group-hover:opacity-100 hover:text-white/60"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreHorizontal size={14} />
-                    </button>
+                    {canPlay && (
+                      <button
+                        className="flex w-6 items-center justify-center text-white/20 opacity-0 transition-all group-hover:opacity-100 hover:text-white/60"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreHorizontal size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -466,47 +492,49 @@ export default function AlbumPage({ album = OLIVIA_ALBUM, onClose }: AlbumPagePr
           {/* ===== Section 3: Copyright Info ===== */}
           <section className="px-6 md:px-8 py-4">
             <div className="text-[12px] text-white/40 leading-[1.8]">
-              {album.releaseDate}　{album.trackCount} 首歌曲、{album.totalDuration}　{album.label}
+              <div>{effectiveAlbum.releaseDate}</div>
+              <div>{effectiveAlbum.trackCount} 首歌曲、{effectiveAlbum.totalDuration}</div>
+              <div>{effectiveAlbum.label}</div>
             </div>
           </section>
 
           {/* ===== Section 5: Other Versions ===== */}
-          {album.otherVersions && album.otherVersions.length > 0 && (
+          {effectiveAlbum.otherVersions && effectiveAlbum.otherVersions.length > 0 && (
             <section className="px-6 md:px-8 py-6 bg-[#2b2b2b]" style={{ marginLeft: '-32px', marginRight: '-32px', paddingLeft: '32px', paddingRight: '32px' }}>
               <SectionTitle title="其他版本" />
-              <CardShelf items={album.otherVersions} />
+              <CardShelf items={effectiveAlbum.otherVersions} />
             </section>
           )}
 
           {/* ===== Section 6: Music Videos ===== */}
-          {album.videos && album.videos.length > 0 && (
+          {effectiveAlbum.videos && effectiveAlbum.videos.length > 0 && (
             <section className="px-6 md:px-8 py-6 bg-[#2b2b2b]" style={{ marginLeft: '-32px', marginRight: '-32px', paddingLeft: '32px', paddingRight: '32px' }}>
               <SectionTitle title="音乐视频" />
-              <VideoShelf items={album.videos} />
+              <VideoShelf items={effectiveAlbum.videos} />
             </section>
           )}
 
           {/* ===== Section 7: More from Artist ===== */}
-          {album.moreFromArtist && album.moreFromArtist.length > 0 && (
+          {effectiveAlbum.moreFromArtist && effectiveAlbum.moreFromArtist.length > 0 && (
             <section className="px-6 md:px-8 py-6 bg-[#2b2b2b]" style={{ marginLeft: '-32px', marginRight: '-32px', paddingLeft: '32px', paddingRight: '32px' }}>
-              <SectionTitle title={`更多${album.artist}的作品`} />
-              <CardShelf items={album.moreFromArtist} />
+              <SectionTitle title={`更多${effectiveAlbum.artist}的作品`} />
+              <CardShelf items={effectiveAlbum.moreFromArtist} />
             </section>
           )}
 
           {/* ===== Section 8: Appears In ===== */}
-          {album.appearsIn && album.appearsIn.length > 0 && (
+          {effectiveAlbum.appearsIn && effectiveAlbum.appearsIn.length > 0 && (
             <section className="px-6 md:px-8 py-6 bg-[#2b2b2b]" style={{ marginLeft: '-32px', marginRight: '-32px', paddingLeft: '32px', paddingRight: '32px' }}>
               <SectionTitle title="出现在以下内容中" />
-              <CardShelf items={album.appearsIn} />
+              <CardShelf items={effectiveAlbum.appearsIn} />
             </section>
           )}
 
           {/* ===== Section 9: You May Also Like ===== */}
-          {album.youMayAlsoLike && album.youMayAlsoLike.length > 0 && (
+          {effectiveAlbum.youMayAlsoLike && effectiveAlbum.youMayAlsoLike.length > 0 && (
             <section className="px-6 md:px-8 py-6 bg-[#2b2b2b]" style={{ marginLeft: '-32px', marginRight: '-32px', paddingLeft: '32px', paddingRight: '32px' }}>
               <SectionTitle title="你可能也喜欢" />
-              <CardShelf items={album.youMayAlsoLike} />
+              <CardShelf items={effectiveAlbum.youMayAlsoLike} />
             </section>
           )}
 

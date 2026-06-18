@@ -47,7 +47,7 @@ export function useTranscriber() {
       setState({ status: 'loading', progress: 0, segments: [], error: null, partialText: '' });
 
       try {
-        const segments = await transcribeWithWhisper(audioData, {
+        const { chunks } = await transcribeWithWhisper(audioData, {
           model,
           language,
           onProgress: (p) => {
@@ -61,6 +61,11 @@ export function useTranscriber() {
         });
 
         if (!abortRef.current) {
+          const segments: TimestampedSegment[] = chunks.map((chunk) => ({
+            text: chunk.text,
+            start: chunk.timestamp[0] ?? 0,
+            end: chunk.timestamp[1] ?? chunk.timestamp[0] ?? 0,
+          }));
           setState({ status: 'done', progress: 1, segments, error: null, partialText: '' });
         }
       } catch (err) {
@@ -77,12 +82,12 @@ export function useTranscriber() {
   );
 
   const startAzure = useCallback(
-    async (file: File, subscriptionKey: string, region: string, language?: string) => {
+    async (audioBuffer: AudioBuffer, subscriptionKey: string, region: string, language?: string) => {
       abortRef.current = false;
       setState({ status: 'recognizing', progress: 0, segments: [], error: null, partialText: '' });
 
       try {
-        const segments = await transcribeWithAzure(file, {
+        const segments = await transcribeWithAzure(audioBuffer, {
           subscriptionKey,
           region,
           language,

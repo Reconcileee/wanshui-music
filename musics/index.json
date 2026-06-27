@@ -1,13 +1,154 @@
-[
-  {
-    "id": 7,
-    "title": "首都",
-    "artist": "罗大佑",
-    "album": "首都",
-    "cover": "musics/albums/罗大佑/首都_cover.jpg",
-    "audioUrl": "musics/首都/罗大佑 - 首都.mp3",
-    "duration": 331,
-    "lyricsUrl": "musics/lyrics/首都.lrc",
-    "lyricsSrtUrl": "musics/lyrics/首都.srt"
-  }
-]
+{
+  "songs": [
+    {
+      "id": 1,
+      "title": "the cure",
+      "artist": "Olivia Rodrigo",
+      "album": "you seem pretty sad for a girl so in love",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/1d/1b/f9/1d1bf9b1-44c6-9a6c-6ffb-c158488c06ce/26UMGIM39303.rgb.jpg/400x400bb.webp",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+      "duration": 198
+    },
+    {
+      "id": 2,
+      "title": "WDA (Whole Different Animal) [feat. G-DRAGON]",
+      "artist": "aespa",
+      "album": "WDA",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/00/1d/e6/001de64e-c2f1-fd4b-3604-3d2e16641968/888735955211.png/400x400bb.webp",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+      "duration": 215
+    },
+    {
+      "id": 3,
+      "title": "hate that i made you love me",
+      "artist": "Ariana Grande",
+      "album": "petal",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/7e/e6/82/7ee682bd-1b17-6adc-be63-b5af1bdff369/26UMGIM51126.rgb.jpg/400x400bb.webp",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+      "duration": 203
+    },
+    {
+      "id": 4,
+      "title": "BOOMPALA",
+      "artist": "LE SSERAFIM",
+      "album": "BOOMPALA",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/b8/0c/98/b80c980c-52c6-a180-ff3e-2afaaab75fdd/823375107286_Cover.jpg/400x400bb.webp",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+      "duration": 178
+    },
+    {
+      "id": 5,
+      "title": "最佳损友",
+      "artist": "陈奕迅",
+      "album": "最佳损友",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/a4/fa/86/a4fa86d6-c23a-c37f-1251-00376ff144cd/00602498378830.rgb.jpg/400x400bb.webp",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+      "duration": 258
+    },
+    {
+      "id": 6,
+      "title": "阴天",
+      "artist": "莫文蔚",
+      "album": "阴天",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/81/cc/52/81cc5224-3ace-5e3c-468a-17b4b71da831/dj.aqolbuce.jpg/400x400bb.webp",
+      "audioUrl": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+      "duration": 282
+    },
+    {
+      "id": 7,
+      "title": "首都",
+      "artist": "罗大佑",
+      "album": "首都",
+      "cover": "musics/albums/罗大佑/首都_cover.jpg",
+      "audioUrl": "musics/首都/罗大佑 - 首都.mp3",
+      "duration": 331,
+      "lyricsUrl": "musics/lyrics/首都.lrc",
+      "lyricsSrtUrl": "musics/lyrics/首都.srt"
+    },
+    {
+      "id": 8,
+      "title": "飞车",
+      "artist": "罗大佑",
+      "album": "首都",
+      "cover": "musics/albums/罗大佑/首都_cover.jpg",
+      "audioUrl": "musics/首都/罗大佑 - 飞车.mp3",
+      "duration": 551,
+      "lyricsUrl": "musics/lyrics/飞车.lrc"
+    }
+  ],
+  "albums": [
+    {
+      "id": 1,
+      "title": "you seem pretty sad for a girl so in love",
+      "artist": "Olivia Rodrigo",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/1d/1b/f9/1d1bf9b1-44c6-9a6c-6ffb-c158488c06ce/26UMGIM39303.rgb.jpg/400x400bb.webp",
+      "songIds": [
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "title": "WDA",
+      "artist": "aespa",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/00/1d/e6/001de64e-c2f1-fd4b-3604-3d2e16641968/888735955211.png/400x400bb.webp",
+      "songIds": [
+        2
+      ]
+    },
+    {
+      "id": 3,
+      "title": "petal",
+      "artist": "Ariana Grande",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/7e/e6/82/7ee682bd-1b17-6adc-be63-b5af1bdff369/26UMGIM51126.rgb.jpg/400x400bb.webp",
+      "songIds": [
+        3
+      ]
+    },
+    {
+      "id": 4,
+      "title": "BOOMPALA",
+      "artist": "LE SSERAFIM",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/b8/0c/98/b80c980c-52c6-a180-ff3e-2afaaab75fdd/823375107286_Cover.jpg/400x400bb.webp",
+      "songIds": [
+        4
+      ]
+    },
+    {
+      "id": 5,
+      "title": "最佳损友",
+      "artist": "陈奕迅",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music118/v4/a4/fa/86/a4fa86d6-c23a-c37f-1251-00376ff144cd/00602498378830.rgb.jpg/400x400bb.webp",
+      "songIds": [
+        5
+      ]
+    },
+    {
+      "id": 6,
+      "title": "阴天",
+      "artist": "莫文蔚",
+      "cover": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/81/cc/52/81cc5224-3ace-5e3c-468a-17b4b71da831/dj.aqolbuce.jpg/400x400bb.webp",
+      "songIds": [
+        6
+      ]
+    },
+    {
+      "id": 7,
+      "title": "首都",
+      "artist": "罗大佑",
+      "cover": "musics/albums/罗大佑/首都_cover.jpg",
+      "songIds": [
+        7
+      ]
+    },
+    {
+      "id": 8,
+      "title": "wdsaxz",
+      "artist": "qwd",
+      "cover": "C:/Users/Lenovo/Pictures/微信图片_20240831135701.jpg",
+      "songIds": [
+        8
+      ]
+    }
+  ],
+  "playlists": []
+}

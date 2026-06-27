@@ -4,12 +4,20 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/wanshui-music/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- 安全修复：CSP 限制资源加载来源，降低 XSS 与供应链风险 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; media-src 'self' https:; connect-src 'self' https:; base-uri 'self'; form-action 'self'" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
     <title>Apple Music 液态玻璃播放器</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <script type="module" crossorigin src="/wanshui-music/assets/index-G6YrcOzi.js"></script>
-    <link rel="stylesheet" crossorigin href="/wanshui-music/assets/index-Cjx8w1tY.css">
+    <script type="module" crossorigin src="/wanshui-music/assets/index-Dw6EveIo.js"></script>
+    <link rel="modulepreload" crossorigin href="/wanshui-music/assets/zustand-vendor-B7tv_jI6.js">
+    <link rel="modulepreload" crossorigin href="/wanshui-music/assets/react-vendor-C5KYSrOe.js">
+    <link rel="modulepreload" crossorigin href="/wanshui-music/assets/lucide-vendor-DYsMVy1H.js">
+    <link rel="stylesheet" crossorigin href="/wanshui-music/assets/index-CCr0nXhY.css">
   </head>
   <body>
     <div id="root"></div>
